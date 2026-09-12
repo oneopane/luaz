@@ -3,8 +3,8 @@
     .version = "0.6.0",
     .dependencies = .{
         .luau = .{
-            .url = "git+https://github.com/luau-lang/luau.git?ref=0.702#c836feb2450a074581010f84da2eadeea38a3d55",
-            .hash = "N-V-__8AAFTGpwCGECbgY1xtyv_VqnBz-6vqicDCwsPr3hl9",
+            .url = "https://github.com/luau-lang/luau/archive/refs/tags/0.738.tar.gz",
+            .hash = "N-V-__8AAPjfGgFG_Ps7mXvCH5VHQbc2TojbrtiKBntwm277",
         },
     },
 
@@ -15,6 +15,7 @@
         "build.zig",
         "build.zig.zon",
         "src",
+        "tests",
         "LICENSE",
         "README.md",
     },

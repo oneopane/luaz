@@ -1,0 +1,35 @@
+{
+  "schema": "luaz-selected-baseline-v1",
+  "selection": {
+    "authority": "user-authorized dependency modernization",
+    "date": "2026-09-12",
+    "compatibility_policy": "Reified's previous Luau mechanism details are reference evidence, not an immutable compatibility contract"
+  },
+  "luau": {
+    "version": "0.738",
+    "url": "https://github.com/luau-lang/luau/archive/refs/tags/0.738.tar.gz",
+    "commit": "c54f558b4d5748ab0658610b8ce0c432053e41eb",
+    "zig_content_hash": "N-V-__8AAPjfGgFG_Ps7mXvCH5VHQbc2TojbrtiKBntwm277",
+    "patches": []
+  },
+  "initial_configuration": {
+    "optimize": "ReleaseSafe",
+    "vector_size": 4,
+    "longjmp": true,
+    "codegen": false,
+    "cxx_standard": "c++17",
+    "cxx_library": "libc++"
+  },
+  "reference_baseline": {
+    "luaz_version": "0.6.0",
+    "luau_version": "0.737",
+    "luau_commit": "62dbc0b4718e87fc746b02f969c91ca2a461b4cf",
+    "zig_content_hash": "N-V-__8AADetGAEcdQuTr-nq27CyCea3jnhtkeu-EYaA03Lb"
+  },
+  "claims": {
+    "identity_and_provenance_verified": true,
+    "effective_build_facts_verified": false,
+    "legacy_accounting_compatibility": false,
+    "compiler_allocation_charge_domain_attested": false
+  }
+}

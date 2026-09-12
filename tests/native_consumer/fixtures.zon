@@ -1,0 +1,23 @@
+.{
+    .schema = "luaz-native-consumer-fixtures-v1",
+    .cases = .{
+        .{
+            .name = "scalar_success",
+            .source = "return 6 * 7",
+            .expected_number = 42,
+        },
+        .{
+            .name = "syntax_error",
+            .source = "return 6 *",
+            .expected = "compiler_error_with_owned_buffer",
+        },
+        .{
+            .name = "compiler_and_state_ownership",
+            .source = "return 'owned'",
+            .expected = "compiler_buffer_and_vm_state_released_exactly_once",
+        },
+    },
+    .conditional = .{
+        .compiler_allocation_retention = "requires an accepted charge-domain definition before adding observations",
+    },
+}
