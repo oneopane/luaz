@@ -1,10 +1,12 @@
 const std = @import("std");
+const builtin = @import("builtin");
 
 pub fn build(b: *std.Build) !void {
     const target = b.standardTargetOptions(.{});
     const optimize = b.standardOptimizeOption(.{});
 
     const flags = &.{
+        "-std=c++17",
         "-DLUA_API=extern\"C\"",
         "-DLUACODEGEN_API=extern\"C\"",
         "-DLUACODE_API=extern\"C\"",
@@ -25,6 +27,7 @@ pub fn build(b: *std.Build) !void {
 
     const opts = .{
         .cover = b.option(bool, "coverage", "Generate test coverage (requires kcov)") orelse false,
+        .codegen = b.option(bool, "codegen", "Build and link Luau CodeGen") orelse true,
         .vector_size = b.option(u8, "vector-size", "Luau vector size (3 or 4, default 4)") orelse 4,
     };
 
@@ -35,6 +38,36 @@ pub fn build(b: *std.Build) !void {
     }
 
     const luau_dep = b.dependency("luau", .{});
+    const generated = b.addWriteFiles();
+    const config_header = generated.add("luaz_config.h", b.fmt(
+        \\#ifndef LUAZ_CONFIG_H
+        \\#define LUAZ_CONFIG_H
+        \\#define LUA_USE_LONGJMP 1
+        \\#define LUA_VECTOR_SIZE {d}
+        \\#ifdef __cplusplus
+        \\#ifndef LUA_API
+        \\#define LUA_API extern "C"
+        \\#endif
+        \\#ifndef LUACODE_API
+        \\#define LUACODE_API extern "C"
+        \\#endif
+        \\#ifndef LUACODEGEN_API
+        \\#define LUACODEGEN_API extern "C"
+        \\#endif
+        \\#else
+        \\#ifndef LUA_API
+        \\#define LUA_API
+        \\#endif
+        \\#ifndef LUACODE_API
+        \\#define LUACODE_API
+        \\#endif
+        \\#ifndef LUACODEGEN_API
+        \\#define LUACODEGEN_API
+        \\#endif
+        \\#endif
+        \\#endif
+        \\
+    , .{opts.vector_size}));
 
     // Luau VM lib
     const luau_vm = blk: {
@@ -65,7 +98,7 @@ pub fn build(b: *std.Build) !void {
     };
 
     // Luau CodeGen lib
-    const luau_codegen = blk: {
+    const luau_codegen = if (opts.codegen) blk: {
         const mod = b.createModule(.{
             .target = target,
             .optimize = optimize,
@@ -90,7 +123,7 @@ pub fn build(b: *std.Build) !void {
         steps.luau_codegen.dependOn(&lib.step);
 
         break :blk lib;
-    };
+    } else null;
 
     // Luau compiler lib
     const luau_compiler = blk: {
@@ -102,12 +135,14 @@ pub fn build(b: *std.Build) !void {
 
         try addSrcFiles(b, mod, luau_dep, "Compiler/src", flags);
         try addSrcFiles(b, mod, luau_dep, "Ast/src", flags);
+        try addSrcFiles(b, mod, luau_dep, "Bytecode/src", flags);
         try addSrcFiles(b, mod, luau_dep, "Common/src", flags);
 
         mod.addCMacro("LUA_USE_LONGJMP", "1");
 
         mod.addIncludePath(luau_dep.path("Common/include"));
         mod.addIncludePath(luau_dep.path("Ast/include"));
+        mod.addIncludePath(luau_dep.path("Bytecode/include"));
         mod.addIncludePath(luau_dep.path("Compiler/include"));
         mod.addIncludePath(luau_dep.path("Compiler/src"));
 
@@ -138,10 +173,10 @@ pub fn build(b: *std.Build) !void {
             .flags = flags,
         });
 
-        addLuauIncludes(luau_dep, mod);
+        addLuauIncludes(luau_dep, mod, opts.codegen);
 
         mod.linkLibrary(luau_vm);
-        mod.linkLibrary(luau_codegen);
+        if (luau_codegen) |codegen| mod.linkLibrary(codegen);
         mod.linkLibrary(luau_compiler);
 
         const exe = b.addExecutable(.{ .name = "luau-compile", .root_module = mod });
@@ -179,7 +214,7 @@ pub fn build(b: *std.Build) !void {
             .flags = flags,
         });
 
-        addLuauIncludes(luau_dep, mod);
+        addLuauIncludes(luau_dep, mod, opts.codegen);
 
         mod.linkLibrary(luau_vm);
         mod.linkLibrary(luau_compiler);
@@ -201,14 +236,21 @@ pub fn build(b: *std.Build) !void {
     const c_module = blk: {
         const write_files = b.addWriteFiles();
 
-        // Create consolidated header
-        const header = write_files.add("_luau.h",
-            \\#include <lua.h>
-            \\#include <lualib.h>
-            \\#include <luacode.h>
-            \\#include <luacodegen.h>
-            \\#include <handler.h>
-        );
+        const header = if (opts.codegen)
+            write_files.add("_luau.h",
+                \\#include <lua.h>
+                \\#include <lualib.h>
+                \\#include <luacode.h>
+                \\#include <luacodegen.h>
+                \\#include <handler.h>
+            )
+        else
+            write_files.add("_luau.h",
+                \\#include <lua.h>
+                \\#include <lualib.h>
+                \\#include <luacode.h>
+                \\#include <handler.h>
+            );
 
         const translated = b.addTranslateC(.{
             .root_source_file = header,
@@ -218,8 +260,9 @@ pub fn build(b: *std.Build) !void {
 
         translated.addIncludePath(luau_dep.path("VM/include"));
         translated.addIncludePath(luau_dep.path("Common/include"));
+        translated.addIncludePath(luau_dep.path("Bytecode/include"));
         translated.addIncludePath(luau_dep.path("Compiler/include"));
-        translated.addIncludePath(luau_dep.path("CodeGen/include"));
+        if (opts.codegen) translated.addIncludePath(luau_dep.path("CodeGen/include"));
         translated.addIncludePath(b.path("src"));
         translated.defineCMacro("LUA_VECTOR_SIZE", b.fmt("{d}", .{opts.vector_size}));
 
@@ -230,7 +273,7 @@ pub fn build(b: *std.Build) !void {
         });
 
         mod.linkLibrary(luau_vm);
-        mod.linkLibrary(luau_codegen);
+        if (luau_codegen) |codegen| mod.linkLibrary(codegen);
         mod.linkLibrary(luau_compiler);
 
         break :blk mod;
@@ -251,12 +294,15 @@ pub fn build(b: *std.Build) !void {
         mod.addCMacro("LUA_VECTOR_SIZE", b.fmt("{d}", .{opts.vector_size}));
         mod.addIncludePath(luau_dep.path("VM/include"));
         mod.addIncludePath(luau_dep.path("Common/include"));
+        mod.addIncludePath(luau_dep.path("Ast/include"));
+        mod.addIncludePath(luau_dep.path("Bytecode/include"));
+        mod.addIncludePath(luau_dep.path("Compiler/include"));
+        mod.addIncludePath(luau_dep.path("VM/src"));
         mod.addIncludePath(b.path("src"));
 
         mod.linkLibrary(luau_vm);
 
-        // TODO: Make these optional
-        mod.linkLibrary(luau_codegen);
+        if (luau_codegen) |codegen| mod.linkLibrary(codegen);
         mod.linkLibrary(luau_compiler);
 
         const lib = b.addLibrary(.{
@@ -266,6 +312,10 @@ pub fn build(b: *std.Build) !void {
         });
 
         b.installArtifact(lib);
+        lib.installHeadersDirectory(luau_dep.path("Compiler/include"), "", .{});
+        lib.installHeadersDirectory(luau_dep.path("Common/include"), "", .{});
+        lib.installHeadersDirectory(luau_dep.path("Ast/include"), "", .{});
+        lib.installHeadersDirectory(luau_dep.path("VM/src"), "luau/internal", .{});
 
         // Docs
         const install_docs = b.addInstallDirectory(.{
@@ -305,6 +355,73 @@ pub fn build(b: *std.Build) !void {
 
         const run_tests = b.addRunArtifact(unit_tests);
         steps.@"test".dependOn(&run_tests.step);
+    }
+
+    // Package-boundary smoke test for native consumers.
+    {
+        const test_mod = b.createModule(.{
+            .root_source_file = b.path("tests/native_consumer/root.zig"),
+            .target = target,
+            .optimize = optimize,
+            .link_libcpp = true,
+        });
+        test_mod.addCSourceFile(.{
+            .file = b.path("tests/native_consumer/native_link.cpp"),
+            .flags = flags,
+        });
+        test_mod.addIncludePath(config_header.dirname());
+        test_mod.addIncludePath(luau_dep.path("Common/include"));
+        test_mod.addIncludePath(luau_dep.path("Ast/include"));
+        test_mod.addIncludePath(luau_dep.path("Compiler/include"));
+        test_mod.addIncludePath(luau_dep.path("VM/include"));
+        test_mod.linkLibrary(luau_vm);
+        test_mod.linkLibrary(luau_compiler);
+
+        const native_tests = b.addTest(.{ .root_module = test_mod });
+        const run_native_tests = b.addRunArtifact(native_tests);
+        const native_step = b.step("test-native-consumer", "Test the native package boundary");
+        native_step.dependOn(&run_native_tests.step);
+    }
+
+    // Deterministic facts for consumers that attest the selected native build.
+    {
+        const triple = try target.result.zigTriple(b.allocator);
+        const codegen_text = if (opts.codegen) "true" else "false";
+        const facts = b.fmt(
+            \\{{
+            \\  "schema": "luaz-build-facts-v1",
+            \\  "luaz_version": "0.6.0",
+            \\  "luau_version": "0.738",
+            \\  "luau_commit": "c54f558b4d5748ab0658610b8ce0c432053e41eb",
+            \\  "luau_zig_content_hash": "N-V-__8AAPjfGgFG_Ps7mXvCH5VHQbc2TojbrtiKBntwm277",
+            \\  "target": "{s}",
+            \\  "zig": "{s}",
+            \\  "optimize": "{s}",
+            \\  "vector_size": {d},
+            \\  "longjmp": true,
+            \\  "codegen": {s},
+            \\  "cxx_standard": "c++17",
+            \\  "cxx_library": "libc++",
+            \\  "source_selection": "recursive .c/.cpp files sorted lexicographically",
+            \\  "vm_sources": "VM/src",
+            \\  "compiler_sources": ["Compiler/src", "Ast/src", "Bytecode/src", "Common/src"]
+            \\}}
+            \\
+        , .{ triple, builtin.zig_version_string, @tagName(optimize), opts.vector_size, codegen_text });
+        var digest: [32]u8 = undefined;
+        std.crypto.hash.sha2.Sha256.hash(facts, &digest, .{});
+        const fingerprint = std.fmt.bytesToHex(digest, .lower);
+        const facts_file = generated.add("build-facts.json", facts);
+        const fingerprint_file = generated.add("build-fingerprint.txt", b.fmt("{s}\n", .{fingerprint}));
+
+        const install_facts = b.addInstallFile(facts_file, "share/luaz/build-facts.json");
+        const install_fingerprint = b.addInstallFile(fingerprint_file, "share/luaz/build-fingerprint.txt");
+        const install_config = b.addInstallFile(config_header, "include/luaz_config.h");
+        const profile_step = b.step("profile", "Install deterministic native build facts");
+        profile_step.dependOn(&install_facts.step);
+        profile_step.dependOn(&install_fingerprint.step);
+        profile_step.dependOn(&install_config.step);
+        b.getInstallStep().dependOn(&install_config.step);
     }
 
     // zig build check-fmt
@@ -366,6 +483,12 @@ fn addSrcFiles(
         }
     }
 
+    std.mem.sort([]const u8, files.items, {}, struct {
+        fn lessThan(_: void, a: []const u8, rhs: []const u8) bool {
+            return std.mem.lessThan(u8, a, rhs);
+        }
+    }.lessThan);
+
     mod.addCSourceFiles(.{
         .root = dep.path(dir_path),
         .files = files.items,
@@ -373,7 +496,7 @@ fn addSrcFiles(
     });
 }
 
-fn addLuauIncludes(dep: *std.Build.Dependency, mod: *std.Build.Module) void {
+fn addLuauIncludes(dep: *std.Build.Dependency, mod: *std.Build.Module, codegen: bool) void {
     mod.addIncludePath(dep.path("Common/include"));
 
     mod.addIncludePath(dep.path("VM/include"));
@@ -387,7 +510,8 @@ fn addLuauIncludes(dep: *std.Build.Dependency, mod: *std.Build.Module) void {
 
     mod.addIncludePath(dep.path("Ast/include"));
     mod.addIncludePath(dep.path("Compiler/include"));
-    mod.addIncludePath(dep.path("CodeGen/include"));
+    mod.addIncludePath(dep.path("Bytecode/include"));
+    if (codegen) mod.addIncludePath(dep.path("CodeGen/include"));
 
     mod.addIncludePath(dep.path("Require/include"));
     mod.addIncludePath(dep.path("Require/Navigator/include"));
