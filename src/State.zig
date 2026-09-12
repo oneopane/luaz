@@ -995,7 +995,7 @@ pub inline fn ref(self: Self, idx: i32) i32 {
 /// The entry is removed from the table, so that the referred object can be collected.
 /// The reference `r` is also freed to be used again.
 pub inline fn unref(self: Self, ref_id: i32) void {
-    c.lua_unref(self.lua, ref_id);
+    _ = c.lua_unref(self.lua, ref_id);
 }
 
 /// Get value from reference
@@ -1393,18 +1393,25 @@ pub inline fn argExpected(self: Self, cond: bool, arg: i32, tname: [:0]const u8)
 
 /// Check if Luau code generator is supported
 pub inline fn codegenSupported() bool {
-    return c.luau_codegen_supported() != 0;
+    if (comptime @hasDecl(c, "luau_codegen_supported")) {
+        return c.luau_codegen_supported() != 0;
+    }
+    return false;
 }
 
 /// Create an instance of Luau code generator.
 /// You must check that this feature is supported using codegenSupported() first.
 pub inline fn codegenCreate(self: Self) void {
-    c.luau_codegen_create(self.lua);
+    if (comptime @hasDecl(c, "luau_codegen_create")) {
+        c.luau_codegen_create(self.lua);
+    }
 }
 
 /// Build target function and all inner functions at the given index
 pub inline fn codegenCompile(self: Self, idx: i32) void {
-    c.luau_codegen_compile(self.lua, idx);
+    if (comptime @hasDecl(c, "luau_codegen_compile")) {
+        c.luau_codegen_compile(self.lua, idx);
+    }
 }
 
 // Debug API

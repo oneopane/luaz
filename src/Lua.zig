@@ -359,7 +359,8 @@ pub fn setCallbacks(self: Self, callbacks: anytype) void {
 
     if (@hasDecl(CallbackType, "useratom")) {
         cb.useratom = struct {
-            fn wrapper(s: [*c]const u8, l: usize) callconv(.c) i16 {
+            fn wrapper(L: ?State.LuaState, s: [*c]const u8, l: usize) callconv(.c) i16 {
+                _ = L;
                 const slice = s[0..l];
 
                 if (comptime is_instance) {
@@ -456,7 +457,19 @@ pub fn setCallbacks(self: Self, callbacks: anytype) void {
 
     if (@hasDecl(CallbackType, "onallocate")) {
         cb.onallocate = struct {
-            fn wrapper(L: ?State.LuaState, osize: usize, nsize: usize) callconv(.c) void {
+            fn wrapper(
+                L: ?State.LuaState,
+                block: ?*anyopaque,
+                osize: usize,
+                nsize: usize,
+                memcat: u8,
+                tt: c_int,
+                tag: c_int,
+            ) callconv(.c) void {
+                _ = block;
+                _ = memcat;
+                _ = tt;
+                _ = tag;
                 if (L) |lua_state| {
                     var state = State{ .lua = lua_state };
 
