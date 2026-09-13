@@ -418,8 +418,10 @@ or containment mechanisms are outside the fork and are not changed by this plan.
 The remaining handoff is not a fork-local blocker: Reified's profile owner must
 still supply or accept the worker-specific source/build observations,
 used-primitive/native-consumer map, and any required compiler-bound definition
-before Reified adoption. No primitive defect or need for F3b is established by
-the candidate evidence; those conditional patches must not be scheduled as
+before Reified adoption. The demonstrated compiler exception-boundary and
+output-copy defect is delivered under F2. No additional primitive defect or
+need for the F3b allocation-route patch is established by the candidate
+evidence; those conditional accounting patches must not be scheduled as
 mandatory work.
 
 Actual candidate evidence includes the Luaz source/build graph, the
