@@ -63,23 +63,26 @@ pub fn compile(source: []const u8, opts: Opts) !Result {
     return switch (compileBounded(source, opts, std.math.maxInt(usize))) {
         .ok => |blob| .{ .ok = blob },
         .err => |blob| .{ .err = blob },
-        .exhausted => Error.OutOfMemory,
+        .allocation_failed => Error.OutOfMemory,
+        // No representable blob exceeds this call's maxInt output ceiling.
+        .output_limit_exceeded => Error.OutOfMemory,
         .internal_error => error.CompilerInternalError,
     };
 }
 
 /// Explicit native compiler disposition. Owned blobs use the same malloc/free
-/// contract as Result; exhaustion and internal failure carry no allocation.
+/// contract as Result; limit, allocation, and internal failures own no blob.
 pub const BoundedResult = union(enum) {
     ok: []const u8,
     err: []const u8,
-    exhausted,
+    output_limit_exceeded,
+    allocation_failed,
     internal_error,
 
     pub fn deinit(self: BoundedResult) void {
         switch (self) {
             .ok, .err => |blob| std.c.free(@constCast(blob.ptr)),
-            .exhausted, .internal_error => {},
+            .output_limit_exceeded, .allocation_failed, .internal_error => {},
         }
     }
 };
@@ -108,12 +111,13 @@ pub fn compileBounded(source: []const u8, opts: Opts, output_limit: usize) Bound
     return switch (status) {
         c.LUAZ_COMPILE_OK => .{ .ok = ptr[0..sz] },
         c.LUAZ_COMPILE_ERROR => .{ .err = ptr[0..sz] },
-        c.LUAZ_COMPILE_EXHAUSTED => .exhausted,
+        c.LUAZ_COMPILE_OUTPUT_LIMIT_EXCEEDED => .output_limit_exceeded,
+        c.LUAZ_COMPILE_ALLOCATION_FAILED => .allocation_failed,
         else => .internal_error,
     };
 }
 
-test "bounded compiler returns explicit exhaustion and inclusive output bound" {
+test "bounded compiler returns distinct inclusive output limit" {
     const baseline = compileBounded("return 42", .{}, std.math.maxInt(usize));
     defer baseline.deinit();
     try std.testing.expect(baseline == .ok);
@@ -122,13 +126,13 @@ test "bounded compiler returns explicit exhaustion and inclusive output bound" {
     try std.testing.expect(exact == .ok);
     const short = compileBounded("return 42", .{}, baseline.ok.len - 1);
     defer short.deinit();
-    try std.testing.expect(short == .exhausted);
+    try std.testing.expect(short == .output_limit_exceeded);
     const syntax = compileBounded("return 6 *", .{}, 4096);
     defer syntax.deinit();
     try std.testing.expect(syntax == .err);
     const bounded_syntax = compileBounded("return 6 *", .{}, 0);
     defer bounded_syntax.deinit();
-    try std.testing.expect(bounded_syntax == .exhausted);
+    try std.testing.expect(bounded_syntax == .output_limit_exceeded);
 }
 
 test "compile Luau code" {
