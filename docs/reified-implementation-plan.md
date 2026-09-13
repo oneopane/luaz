@@ -362,10 +362,15 @@ has independently reproduced Zig content hash
 This is the explicit changed Luaz package/profile compatibility boundary;
 the selected profile fingerprint above and the unchanged Luau dependency hash
 `N-V-__8AADetGAEcdQuTr-nq27CyCea3jnhtkeu-EYaA03Lb` identify different inputs.
-This evidence receipt supersedes delivery receipts `c5086fd4`, `cb7a31e2`,
-`522adcf8`, and `b34a9b1b496f885ced3628e07bcba088842b3f2a`, while retaining
-implementation `e0274e1edd64d7245cfb0d87b7a294d98918cf62`. The exact pinned
-`zig fetch` command is recorded in `docs/native-consumer.md` and the baseline.
+This evidence receipt supersedes delivery receipts
+`c5086fd4651998f4b31d2ef31f7dff1ab34a7d15`,
+`90237af7448e85aaaa137d9ff99405302ca1b243`, and
+`b34a9b1b496f885ced3628e07bcba088842b3f2a`; implementation revision
+`cb7a31e28d0a7d33c3c4a37a92c31103d44cb95d`; and profile fingerprint
+`522adcf844fbcfa96f7a02226093824b080273ab91295fc7bbe3966681712d9f`.
+It retains current implementation `e0274e1edd64d7245cfb0d87b7a294d98918cf62`.
+The exact pinned `zig fetch` command is recorded in `docs/native-consumer.md`
+and the baseline.
 
 The separate package at `tests/external_consumer` also passed `zig build test`
 for Debug/ReleaseSafe with codegen disabled/enabled at vector size 4, plus

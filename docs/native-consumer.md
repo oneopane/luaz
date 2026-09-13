@@ -151,10 +151,14 @@ This archive hash identifies Luaz, not its unchanged Luau dependency hash
 profile fingerprint `8ed5b5cf419951d97e738404d6d01e0ed8ecf90e5212113c42c07ed5439ec477`.
 Together the Luaz archive and selected profile identify the explicit changed
 Luaz package/profile compatibility boundary. This receipt supersedes delivery
-receipts `c5086fd4`, `cb7a31e2`, `522adcf8`, and
-`b34a9b1b496f885ced3628e07bcba088842b3f2a`; the implementation remains
-`e0274e1edd64d7245cfb0d87b7a294d98918cf62`. The receipt adds delivery evidence
-and does not change implementation behavior or claim Reified adoption.
+receipts `c5086fd4651998f4b31d2ef31f7dff1ab34a7d15`,
+`90237af7448e85aaaa137d9ff99405302ca1b243`, and
+`b34a9b1b496f885ced3628e07bcba088842b3f2a`; implementation revision
+`cb7a31e28d0a7d33c3c4a37a92c31103d44cb95d`; and profile fingerprint
+`522adcf844fbcfa96f7a02226093824b080273ab91295fc7bbe3966681712d9f`.
+The current implementation remains `e0274e1edd64d7245cfb0d87b7a294d98918cf62`.
+The receipt adds delivery evidence and does not change implementation behavior
+or claim Reified adoption.
 
 G0 provenance is recorded in `tests/native_consumer/baseline.json`: this is the
 Reified packaged luaz 0.6.0 baseline, and the 0.737 commit mapping is supplied
