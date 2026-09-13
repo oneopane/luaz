@@ -20,6 +20,58 @@
     "cxx_standard": "c++17",
     "cxx_library": "libc++"
   },
+  "candidate_delivery": {
+    "implementation_revision": "ca3f50b48a7d5631fbbd7c3193f0ba6158ca6bdd",
+    "toolchain": {
+      "path": "/opt/homebrew/bin/zig",
+      "version": "0.16.0"
+    },
+    "target": "aarch64-macos",
+    "target_triple": "aarch64-macos.15.6.1...15.6.1-none",
+    "selected_profile": {
+      "command": "/opt/homebrew/bin/zig build profile -Doptimize=ReleaseSafe -Dcodegen=false -Dvector-size=4",
+      "options": {
+        "optimize": "ReleaseSafe",
+        "codegen": false,
+        "vector_size": 4
+      },
+      "fingerprint": "79ececf7a9dece184f130c0087178ab852cd6de72d19745543a38347986570a7"
+    },
+    "checks": [
+      {
+        "command": "/opt/homebrew/bin/zig fmt --check build.zig build.zig.zon src tests/native_consumer",
+        "result": "passed"
+      },
+      {
+        "command": "/opt/homebrew/bin/zig build",
+        "result": "passed"
+      },
+      {
+        "command": "/opt/homebrew/bin/zig build test",
+        "result": "passed"
+      },
+      {
+        "command": "/opt/homebrew/bin/zig build test-native-consumer",
+        "result": "passed"
+      },
+      {
+        "command": "/opt/homebrew/bin/zig build test-native-consumer -Dcodegen=false",
+        "result": "passed"
+      },
+      {
+        "command": "/opt/homebrew/bin/zig build profile -Doptimize=ReleaseSafe -Dcodegen=false -Dvector-size=4",
+        "result": "passed; fingerprint matched the selected profile"
+      },
+      {
+        "command": "repeat /opt/homebrew/bin/zig build profile -Doptimize=ReleaseSafe -Dcodegen=false -Dvector-size=4",
+        "result": "passed; fingerprint was identical"
+      },
+      {
+        "command": "/opt/homebrew/bin/zig build profile -Doptimize=ReleaseSafe -Dcodegen=false -Dvector-size=3",
+        "result": "passed; fingerprint differed"
+      }
+    ]
+  },
   "reference_baseline": {
     "luaz_version": "0.6.0",
     "luau_version": "0.737",

@@ -2272,6 +2272,58 @@ test "setCallbacks instance methods" {
     try expect(callbacks.counter > 0);
 }
 
+test "setCallbacks instance useratom and onfree trampolines" {
+    const lua = try Lua.init(&std.testing.allocator);
+    defer lua.deinit();
+
+    const InstanceCallbacks = struct {
+        free_called: bool = false,
+        free_state: ?State.LuaState = null,
+        free_block: ?*anyopaque = null,
+        atom_called: bool = false,
+        atom_state: ?State.LuaState = null,
+        atom_bytes: [3]u8 = undefined,
+
+        pub fn onfree(self: *@This(), state: *State, block: ?*anyopaque) void {
+            self.free_called = true;
+            self.free_state = state.lua;
+            self.free_block = block;
+        }
+
+        pub fn useratom(self: *@This(), state: *State, s: []const u8) i16 {
+            self.atom_called = true;
+            self.atom_state = state.lua;
+            @memcpy(self.atom_bytes[0..], s);
+            return 17;
+        }
+    };
+
+    var callbacks = InstanceCallbacks{};
+    lua.setCallbacks(&callbacks);
+
+    var marker: u8 = 0;
+    const marker_ptr: *anyopaque = @ptrCast(&marker);
+    try expect(lua.state.callbacks().onfree != null);
+    lua.state.callbacks().onfree.?(lua.state.lua, marker_ptr);
+    try expect(callbacks.free_called);
+    try expectEq(callbacks.free_state.?, lua.state.lua);
+    try expect(callbacks.free_block == marker_ptr);
+
+    const atom_text = "abc";
+    try expect(lua.state.callbacks().useratom != null);
+    const atom_id = lua.state.callbacks().useratom.?(lua.state.lua, atom_text.ptr, atom_text.len);
+    try expectEq(atom_id, 17);
+    try expect(callbacks.atom_called);
+    try expectEq(callbacks.atom_state.?, lua.state.lua);
+    try std.testing.expectEqualSlices(u8, atom_text, callbacks.atom_bytes[0..]);
+
+    // Replacing the callback object clears callbacks that the new object does
+    // not provide, so no stale function pointer survives a configuration swap.
+    lua.setCallbacks(struct {}{});
+    try expect(lua.state.callbacks().onfree == null);
+    try expect(lua.state.callbacks().useratom == null);
+}
+
 test "Function.getCoverage" {
     const lua = try Lua.init(&std.testing.allocator);
     defer lua.deinit();

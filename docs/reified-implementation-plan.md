@@ -320,11 +320,12 @@ zig fmt --check build.zig build.zig.zon src tests/native_consumer
 zig build
 zig build test
 zig build test-native-consumer
-zig build profile
+zig build profile -Doptimize=ReleaseSafe -Dcodegen=false -Dvector-size=4
 ~~~
 
 The candidate also ran `zig build test-native-consumer -Dcodegen=false`,
-`zig build profile -Doptimize=ReleaseSafe`, and repeated profile generation;
+repeated the exact selected profile command, and varied vector size and target
+CPU features;
 the Debug/ReleaseSafe and codegen-disabled/enabled package and consumer checks
 passed. The generated version-2 facts were stable for identical inputs and
 changed when vector size or target CPU features changed.

@@ -53,8 +53,20 @@ zig build
 zig build test
 zig build test-native-consumer
 zig build test-native-consumer -Dcodegen=false
-zig build profile -Doptimize=ReleaseSafe
+zig build profile -Doptimize=ReleaseSafe -Dcodegen=false -Dvector-size=4
 ```
+
+This delivery is bound to Luaz implementation revision
+`ca3f50b48a7d5631fbbd7c3193f0ba6158ca6bdd`. The selected profile is exactly
+`/opt/homebrew/bin/zig build profile -Doptimize=ReleaseSafe -Dcodegen=false -Dvector-size=4`;
+its effective options are `optimize=ReleaseSafe`, `codegen=false`, and
+`vector_size=4`.
+
+The fingerprint below is the profile fingerprint at that implementation
+revision. The later documentation and callback-test follow-up changes
+`src/**/*.zig`, which is intentionally included in the package source digest;
+rebuilding after those changes therefore produces a new fingerprint and does
+not replace this candidate receipt.
 
 The profile output is deterministic for repeated identical inputs and changes
 when the vector-size or target CPU feature set changes. Compiler allocation
@@ -64,6 +76,13 @@ candidate and are not claimed by these checks.
 For the host `aarch64-macos` / ReleaseSafe / vector-size-4 / codegen-disabled
 configuration, the checked fingerprint is
 `79ececf7a9dece184f130c0087178ab852cd6de72d19745543a38347986570a7`.
+
+At that revision, delivery checks passed: formatting, Debug and ReleaseSafe
+product builds, ordinary tests, native-consumer tests with codegen enabled and
+disabled, and the selected profile. Repeating the selected profile produced
+the same fingerprint; changing vector size or target CPU features produced a
+different fingerprint. The follow-up callback trampoline coverage also passes
+in the ordinary test artifact.
 
 The package does not make arbitrary Luau calls safe across Zig cleanup or C++
 RAII frames when Luau uses `longjmp`. A consumer-owned protected native landing
