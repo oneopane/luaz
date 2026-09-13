@@ -150,7 +150,8 @@
     ]
   },
   "claims": {
-    "identity_and_provenance_verified": true,
+    "identity_and_provenance_accepted": true,
+    "identity_mapping_independently_resolved": false,
     "effective_build_facts_verified": true,
     "legacy_accounting_compatibility": false,
     "compiler_allocation_charge_domain_attested": false
