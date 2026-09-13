@@ -166,11 +166,15 @@ pub fn build(b: *std.Build) !void {
         });
 
         mod.addCSourceFile(.{ .file = b.path("src/handler.cpp"), .flags = flags });
+        mod.addCSourceFile(.{ .file = b.path("src/compiler.cpp"), .flags = flags });
         mod.addCMacro("LUA_VECTOR_SIZE", b.fmt("{d}", .{opts.vector_size}));
         mod.addIncludePath(luau_dep.path("Common/include"));
         mod.addIncludePath(luau_dep.path("VM/include"));
         mod.addIncludePath(b.path("src"));
         mod.linkLibrary(luau_vm);
+        mod.addIncludePath(luau_dep.path("Compiler/include"));
+        mod.addIncludePath(luau_dep.path("Ast/include"));
+        mod.linkLibrary(luau_compiler);
 
         const lib = b.addLibrary(.{
             .name = "luaz_support",
@@ -179,6 +183,7 @@ pub fn build(b: *std.Build) !void {
         });
 
         lib.installHeader(b.path("src/handler.h"), "handler.h");
+        lib.installHeader(b.path("src/compiler.h"), "luaz_compiler.h");
         b.installArtifact(lib);
 
         break :blk lib;
@@ -272,6 +277,7 @@ pub fn build(b: *std.Build) !void {
                 \\#include <luacode.h>
                 \\#include <luacodegen.h>
                 \\#include <handler.h>
+                \\#include <compiler.h>
             )
         else
             write_files.add("_luau.h",
@@ -279,6 +285,7 @@ pub fn build(b: *std.Build) !void {
                 \\#include <lualib.h>
                 \\#include <luacode.h>
                 \\#include <handler.h>
+                \\#include <compiler.h>
             );
 
         const translated = b.addTranslateC(.{
@@ -334,6 +341,7 @@ pub fn build(b: *std.Build) !void {
     });
 
     b.installArtifact(luaz_lib);
+    luaz_lib.installHeader(config_header, "luaz_config.h");
     luaz_lib.installHeadersDirectory(luau_dep.path("Compiler/include"), "", .{});
     luaz_lib.installHeadersDirectory(luau_dep.path("Common/include"), "", .{});
     luaz_lib.installHeadersDirectory(luau_dep.path("Ast/include"), "", .{});
@@ -392,7 +400,7 @@ pub fn build(b: *std.Build) !void {
             .file = b.path("tests/native_consumer/native_link.cpp"),
             .flags = flags,
         });
-        test_mod.addIncludePath(config_header.dirname());
+        test_mod.addIncludePath(luaz_lib.getEmittedIncludeTree());
         test_mod.addIncludePath(luau_dep.path("Common/include"));
         test_mod.addIncludePath(luau_dep.path("Ast/include"));
         test_mod.addIncludePath(luau_dep.path("Compiler/include"));
@@ -417,12 +425,9 @@ pub fn build(b: *std.Build) !void {
 
         const install_facts = b.addInstallFile(facts_file, "share/luaz/build-facts.json");
         const install_fingerprint = b.addInstallFile(fingerprint_file, "share/luaz/build-fingerprint.txt");
-        const install_config = b.addInstallFile(config_header, "include/luaz_config.h");
         const profile_step = b.step("profile", "Install deterministic native build facts");
         profile_step.dependOn(&install_facts.step);
         profile_step.dependOn(&install_fingerprint.step);
-        profile_step.dependOn(&install_config.step);
-        b.getInstallStep().dependOn(&install_config.step);
     }
 
     // zig build check-fmt
@@ -534,7 +539,7 @@ fn buildFacts(
     defer source_paths.deinit(gpa);
 
     const source_digest = try hashSourcePaths(b, source_paths.items);
-    const support_paths = &.{ "src/handler.cpp", "src/handler.h" };
+    const support_paths = &.{ "src/handler.cpp", "src/handler.h", "src/compiler.cpp", "src/compiler.h" };
     const support_digest = try hashSourcePaths(b, support_paths);
 
     var vector_text: [3]u8 = undefined;

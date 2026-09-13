@@ -1,0 +1,8 @@
+.{
+    .name = .external_luaz_consumer,
+    .version = "0.0.0",
+    .fingerprint = 0x876453589101812d,
+    .minimum_zig_version = "0.16.0",
+    .dependencies = .{ .luaz = .{ .path = "../.." } },
+    .paths = .{ "build.zig", "build.zig.zon", "main.cpp", "root.zig" },
+}

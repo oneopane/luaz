@@ -31,6 +31,54 @@ C++17 with libc++. The installed headers include the public VM, compiler, and
 common surfaces. Upstream VM internals are installed under `luau/internal` only
 for pin-coupled consumers; `lstate.h` is not a stable Luaz API.
 
+The generated configuration header belongs to the public `luaz` artifact.
+External Zig builds obtain it with
+`dependency.artifact("luaz").getEmittedIncludeTree()`. This tree also supplies
+compiler/common headers; public VM and support headers are obtained from the
+`luau_vm` and `luaz_support` artifact include trees. Link the `luaz` artifact
+once to obtain the native dependency closure. No install step, cache path,
+private generator directory, or consumer-generated configuration is required.
+`zig build` installs the same generated header as `include/luaz_config.h`;
+`zig build profile` installs only the facts and fingerprint.
+
+`tests/external_consumer` is a separate Zig package with a path dependency on
+Luaz. From that directory, run `zig build test -Doptimize=ReleaseSafe
+-Dcodegen=false -Dvector-size=4`. It obtains only public modules/artifacts,
+compiles C++ through their emitted include trees, links, and executes the
+native compile/load/call boundary. Its source explicitly includes the generated
+configuration header and asserts vector-size and longjmp agreement.
+
+### Native compiler exception boundary
+
+The `luaz_support` artifact owns `luaz_compile_bounded`, declared in its public
+`luaz_compiler.h` header and exposed by the `c` module. The C++ function is
+`noexcept` and calls `Luau::compile` inside its exception landing point.
+`std::bad_alloc` returns `LUAZ_COMPILE_EXHAUSTED`; other escaping exceptions
+return `LUAZ_COMPILE_INTERNAL_ERROR`. Normal bytecode and encoded syntax errors
+return `LUAZ_COMPILE_OK` and `LUAZ_COMPILE_ERROR`, respectively. Both own a
+`malloc` blob that the consumer frees exactly once with `free`.
+
+The inclusive output-copy ceiling applies to bytecode and encoded diagnostics
+before the returned blob is allocated or copied. Exhaustion/internal failure
+always return a null pointer and zero size. This ceiling does not bound the
+compiler's temporary C++ allocations. Compiler memory metering remains owned
+by the consumer; Luaz installs no production global allocator.
+
+`Compiler.compileBounded(source, options, output_limit)` exposes
+`ok`, `err`, `exhausted`, and `internal_error` without parsing diagnostics.
+Its result's `deinit` frees owned blobs and does nothing for the two empty
+dispositions. Existing `Compiler.compile` now uses this boundary with an
+unlimited output-copy ceiling, mapping exhaustion to `OutOfMemory` and internal
+failure to `CompilerInternalError`. Raw upstream `c.luau_compile` remains
+available for compatibility, but does not provide this exception contract.
+
+The external consumer installs a test-only throwing allocator. Exactly 8192
+spaces followed by a function under a 4096-byte compiler allocation budget
+returns explicit exhaustion to Zig and leaves no live compiler allocation.
+A budget sweep also checks exhaustion after successful allocations, complete
+C++ unwinding, and subsequent success. Ordinary tests check inclusive output
+bounds and distinguish syntax errors from exhaustion.
+
 The package fixes `LUA_USE_LONGJMP=1` and applies the selected vector size to the
 VM, translated C declarations, Luaz support code, and native consumers. The
 effective C++ flags and C macro definitions are included in the build facts. A

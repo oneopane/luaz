@@ -60,7 +60,35 @@ pub const Opts = struct {
 /// Returns either compiled bytecode or an error message.
 /// In both cases, memory must be freed using Result.deinit().
 pub fn compile(source: []const u8, opts: Opts) !Result {
-    var options = c.lua_CompileOptions{
+    return switch (compileBounded(source, opts, std.math.maxInt(usize))) {
+        .ok => |blob| .{ .ok = blob },
+        .err => |blob| .{ .err = blob },
+        .exhausted => Error.OutOfMemory,
+        .internal_error => error.CompilerInternalError,
+    };
+}
+
+/// Explicit native compiler disposition. Owned blobs use the same malloc/free
+/// contract as Result; exhaustion and internal failure carry no allocation.
+pub const BoundedResult = union(enum) {
+    ok: []const u8,
+    err: []const u8,
+    exhausted,
+    internal_error,
+
+    pub fn deinit(self: BoundedResult) void {
+        switch (self) {
+            .ok, .err => |blob| std.c.free(@constCast(blob.ptr)),
+            .exhausted, .internal_error => {},
+        }
+    }
+};
+
+/// Catches native allocation failure before it crosses into Zig. output_limit
+/// bounds the returned copy before allocation; compiler working-memory metering
+/// remains the consumer's responsibility.
+pub fn compileBounded(source: []const u8, opts: Opts, output_limit: usize) BoundedResult {
+    const options = c.lua_CompileOptions{
         .optimizationLevel = opts.opt_level,
         .debugLevel = opts.dbg_level,
         .typeInfoLevel = opts.type_info_level,
@@ -68,23 +96,39 @@ pub fn compile(source: []const u8, opts: Opts) !Result {
     };
 
     var sz: usize = 0;
-    const ptr = c.luau_compile(
+    var ptr: [*c]u8 = null;
+    const status = c.luaz_compile_bounded(
         source.ptr,
         source.len,
         &options,
+        output_limit,
+        &ptr,
         &sz,
     );
+    return switch (status) {
+        c.LUAZ_COMPILE_OK => .{ .ok = ptr[0..sz] },
+        c.LUAZ_COMPILE_ERROR => .{ .err = ptr[0..sz] },
+        c.LUAZ_COMPILE_EXHAUSTED => .exhausted,
+        else => .internal_error,
+    };
+}
 
-    if (ptr == null or sz == 0) {
-        return Error.OutOfMemory;
-    }
-
-    const blob = ptr[0..sz];
-
-    // When source compilation fails, the resulting bytecode contains the encoded error.
-    // 0 acts as a special marker for error bytecode.
-    // See https://github.com/luau-lang/luau/blob/8fe64db609ccbffb0abb7507c7ecef8c88327ef3/Compiler/src/BytecodeBuilder.cpp#L1212
-    return if (blob[0] == 0) .{ .err = blob } else .{ .ok = blob };
+test "bounded compiler returns explicit exhaustion and inclusive output bound" {
+    const baseline = compileBounded("return 42", .{}, std.math.maxInt(usize));
+    defer baseline.deinit();
+    try std.testing.expect(baseline == .ok);
+    const exact = compileBounded("return 42", .{}, baseline.ok.len);
+    defer exact.deinit();
+    try std.testing.expect(exact == .ok);
+    const short = compileBounded("return 42", .{}, baseline.ok.len - 1);
+    defer short.deinit();
+    try std.testing.expect(short == .exhausted);
+    const syntax = compileBounded("return 6 *", .{}, 4096);
+    defer syntax.deinit();
+    try std.testing.expect(syntax == .err);
+    const bounded_syntax = compileBounded("return 6 *", .{}, 0);
+    defer bounded_syntax.deinit();
+    try std.testing.expect(bounded_syntax == .exhausted);
 }
 
 test "compile Luau code" {
