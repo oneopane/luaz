@@ -26,9 +26,30 @@
     "luau_commit": "62dbc0b4718e87fc746b02f969c91ca2a461b4cf",
     "zig_content_hash": "N-V-__8AADetGAEcdQuTr-nq27CyCea3jnhtkeu-EYaA03Lb"
   },
+  "package_outputs": {
+    "modules": [
+      "c",
+      "luaz"
+    ],
+    "artifacts": [
+      "luaz",
+      "luaz_support",
+      "luau_vm",
+      "luau_compiler",
+      "luau_codegen (when -Dcodegen=true)"
+    ],
+    "headers": [
+      "include/luaz_config.h",
+      "include/handler.h"
+    ],
+    "facts": [
+      "share/luaz/build-facts.json",
+      "share/luaz/build-fingerprint.txt"
+    ]
+  },
   "claims": {
     "identity_and_provenance_verified": true,
-    "effective_build_facts_verified": false,
+    "effective_build_facts_verified": true,
     "legacy_accounting_compatibility": false,
     "compiler_allocation_charge_domain_attested": false
   }

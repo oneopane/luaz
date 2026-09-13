@@ -3,6 +3,7 @@
 #include "lua.h"
 #include "luacode.h"
 #include "lualib.h"
+#include "handler.h"
 
 #include <cstdlib>
 #include <cstring>
@@ -55,4 +56,16 @@ extern "C" int luaz_native_consumer_failure_smoke()
     lua_close(state);
     std::free(bytecode);
     return encoded_error && load_status != LUA_OK ? 0 : 3;
+}
+
+static int native_consumer_assert_handler(const char*, const char*, int, const char*)
+{
+    return 1;
+}
+
+extern "C" int luaz_native_consumer_assert_smoke()
+{
+    luau_set_assert_handler(native_consumer_assert_handler);
+    luau_set_assert_handler(nullptr);
+    return 0;
 }

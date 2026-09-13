@@ -1,10 +1,28 @@
 # Native consumer contract
 
-Luaz owns one coherent Luau native build. Consumers import the existing `luaz`
-Zig module or translated `c` module and may link the package artifacts
-`luaz`, `luau_vm`, and `luau_compiler`. The `luau_codegen` artifact is present
-only when `-Dcodegen=true` (the compatibility default); Reified selects
-`-Dcodegen=false`.
+The 2026-09-12 candidate package builds Luau 0.738 (commit
+`c54f558b4d5748ab0658610b8ce0c432053e41eb`) as one native graph. Consumers may
+import both documented Zig modules:
+
+```zig
+const c = @import("c");
+const luaz = @import("luaz");
+```
+
+The package publishes the `luaz` and `luaz_support` artifacts alongside the
+`luau_vm` and `luau_compiler` dependencies. `luaz_support` is the sole owner
+of the Luaz native support source (`src/handler.cpp`) and installs
+`include/handler.h`; it is reached transitively by both public modules and by
+the `luaz` artifact. A consumer must link one package graph and must not
+compile `handler.cpp`, a second Luau VM, or a second Luau compiler. The
+`luau_codegen` artifact is present only when `-Dcodegen=true` (the compatibility
+default); Reified selects `-Dcodegen=false`.
+
+The package-boundary smoke test imports and uses both modules, calls
+`luaz.setAssertHandler` and `c.luau_set_assert_handler`, and links a C++ call to
+the installed-header primitive. This verifies that the support implementation
+is available through the public package closure rather than through a second
+consumer-local copy.
 
 Native C++ consumers include `luaz_config.h` before Luau headers and compile as
 C++17 with libc++. The installed headers include the public VM, compiler, and
@@ -12,13 +30,40 @@ common surfaces. Upstream VM internals are installed under `luau/internal` only
 for pin-coupled consumers; `lstate.h` is not a stable Luaz API.
 
 The package fixes `LUA_USE_LONGJMP=1` and applies the selected vector size to the
-VM, translated C declarations, Luaz support code, and native consumers. A
+VM, translated C declarations, Luaz support code, and native consumers. The
+effective C++ flags and C macro definitions are included in the build facts. A
 consumer must not compile or link a second Luau VM or compiler.
 
 `zig build profile` installs deterministic facts at
 `zig-out/share/luaz/build-facts.json` and their SHA-256 fingerprint at
-`zig-out/share/luaz/build-fingerprint.txt`. These identify the package build,
-not a consumer's bridge source, execution policy, limits, or worker protocol.
+`zig-out/share/luaz/build-fingerprint.txt`. The version-2 facts include the
+Luau revision/content hash, Luaz source and support-source hashes, target
+architecture/CPU model/feature set, compiler defaults, native flags/macros,
+module/artifact names, vector/longjmp/codegen settings, and source roots.
+They identify the package build, not a consumer's bridge source, execution
+policy, limits, or worker protocol.
+
+The candidate was checked with `/opt/homebrew/bin/zig` 0.16.0 on
+`aarch64-macos` for Debug and ReleaseSafe builds, with codegen disabled and
+enabled. The focused commands were:
+
+```sh
+zig fmt --check build.zig build.zig.zon src tests/native_consumer
+zig build
+zig build test
+zig build test-native-consumer
+zig build test-native-consumer -Dcodegen=false
+zig build profile -Doptimize=ReleaseSafe
+```
+
+The profile output is deterministic for repeated identical inputs and changes
+when the vector-size or target CPU feature set changes. Compiler allocation
+metering, Reified worker policy, and Reified adoption remain outside this fork
+candidate and are not claimed by these checks.
+
+For the host `aarch64-macos` / ReleaseSafe / vector-size-4 / codegen-disabled
+configuration, the checked fingerprint is
+`79ececf7a9dece184f130c0087178ab852cd6de72d19745543a38347986570a7`.
 
 The package does not make arbitrary Luau calls safe across Zig cleanup or C++
 RAII frames when Luau uses `longjmp`. A consumer-owned protected native landing

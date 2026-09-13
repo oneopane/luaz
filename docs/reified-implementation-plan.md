@@ -5,17 +5,21 @@ adoption/extraction. This replaces the earlier public execution-engine plan;
 its proposed runtime abstractions and implementation increments are retired,
 not outstanding obligations.
 
-Status: preparation only. The exact attested baseline handoff G0 is missing,
-so no production fork patch is ready to execute. This revision changes only
-this plan; no source inspection, implementation, build, or test was performed.
+Status: candidate delivery complete for the dependency-owned package boundary.
+The fork is pinned to Luau 0.738 and the native package, public module closure,
+support linkage, and deterministic build facts have been implemented and
+checked locally. This is not Reified adoption: the Reified worker still owns
+protected execution, policy, containment, and its own compatibility/profile
+acceptance.
 
 ## Evidence and responsibility
 
-The sole source evidence is docs/reified-capability-requirements.md. It records
-useful dependency/build discrepancies and primitive behavior, but its proposed
-capability expansion is not execution authority under this strategy. Its links
-and source citations were not followed. Paths below are proposed write scopes,
-not claims about uninspected files.
+The preparation record in docs/reified-capability-requirements.md supplied the
+initial dependency/build discrepancies and primitive hypotheses, but its
+proposed capability expansion is not execution authority under this strategy.
+The candidate additionally inspected the Luaz build/source graph, the selected
+Luau package, and the native consumer closure. Paths below describe ownership
+and write scopes; they do not move Reified policy into this fork.
 
 The fork has four responsibilities:
 
@@ -43,14 +47,19 @@ resource discipline and prevents a jump across Zig cleanup or live C++ RAII
 frames. This plan does not recreate that component as a luaz API or relocate
 the mixed bridge wholesale.
 
-## G0: exact attested baseline handoff
+## G0: exact baseline record
 
-G0 is a blocking handoff owned by the recorded Reified profile/contract owner.
-The luaz worker must not choose between the research note's Luau 0.702 pin and
-its cited 0.737 bridge assumptions. Neither is sufficient evidence of the
-currently attested runtime.
+The candidate resolves the previously ambiguous pin: Luau 0.738 at commit
+`c54f558b4d5748ab0658610b8ce0c432053e41eb`, with the Zig package content hash
+recorded in `build.zig.zon` and `tests/native_consumer/baseline.json`. The
+candidate does not silently preserve the older 0.702 or 0.737 identity.
 
-The concrete deliverable is the accepted luaz-attested-baseline-v1 bundle:
+The full profile-owner handoff remains a Reified adoption responsibility. The
+fork's effective package facts are now generated and checked by `zig build
+profile`; they are not a substitute for Reified's accepted worker profile or
+for behavioral observations that belong to the worker.
+
+The eventual Reified handoff may still use an accepted luaz-attested-baseline-v1 bundle:
 
 - manifest.json: producer, attested-runtime identity, member hashes, and the
   profile/contract owner's acceptance.
@@ -71,10 +80,10 @@ Reified's consumer units; only the former belong in the package.
 A compiler-bound requirement must state its charge domain, lifetime, and current
 observable metrics; it must not arrive as an undefined request for "metering."
 
-Luaz's preparation owner checks completeness and records adoption of the exact
-accepted bundle digest. Unknown pin/build facts, missing observations, or an
-unresolved required-bound definition keep G0 open. This plan does not authorize
-Reified inspection or baseline acquisition by the fork worker.
+The fork candidate checks identity and effective package facts, but does not
+claim acceptance of legacy accounting or a compiler allocation charge domain.
+Unknown worker observations and an unresolved required-bound definition remain
+open for Reified adoption; they do not block this dependency-only delivery.
 
 Initially preserve the currently attested native behavior and accounting,
 including active-cycle rejection in Reified. A source/build change produces
@@ -82,25 +91,22 @@ updated build facts; an unavoidable semantic/accounting change additionally
 requires an explicitly accepted new execution profile. Do not hide either
 change behind a language-version string.
 
-The smallest implementation slice, once G0 is adopted, is F0: align the resolved
-dependency pin and record its provenance. If it already matches, verify and
-record that fact without churning the pin. Before G0, only this preparation and
-the external evidence handoff can proceed; no separate public-API scaffolding
-or schema-implementation project is necessary.
+The delivered dependency slice includes F0 pin/provenance alignment and F1
+coherent native packaging. No separate public execution-engine API was added.
 
 ## Smallest coherent package boundary
 
-F1 must make it possible to build Reified's existing native component against
+F1 makes it possible to build Reified's existing native component against
 the package without separately guessing Luau source lists, flags, or include
 roots. Keep the existing luaz Zig module and existing working exports.
 
 The required outputs are:
 
-- The exact VM/compiler native artifact set, with required luaz-owned native
-  support such as the existing assert linkage. Prefer existing artifact names
-  when they already provide a coherent boundary. Add one canonical
-  luaz_native artifact only if it removes otherwise duplicated consumer
-  source/link assembly. Do not link a second VM or compiler copy.
+- The exact VM/compiler native artifact set, with the `luaz_support` artifact
+  owning the single `src/handler.cpp` compilation and installed `handler.h`.
+  Both public modules and the `luaz` artifact reach that support artifact; a
+  consumer does not compile a second copy. Do not link a second VM or compiler
+  copy.
 - Package-anchored headers/include roots and the effective ABI definitions
   needed to compile a consumer's own C++ invocation component. Include only
   roots required by the observed consumer. Generated configuration headers,
@@ -204,14 +210,15 @@ These are future scopes, not authorization to perform them during this planning
 turn. Each patch has one owner. Shared build files have one integrating writer.
 Do not create optional files unless the corresponding need is demonstrated.
 
-**F0 — Exact pin and provenance.** Requires accepted G0.
+**F0 — Exact pin and provenance.** Delivered for the selected 0.738 baseline.
 Write only build.zig.zon when alignment is needed, plus
 tests/native_consumer/baseline.json and tests/native_consumer/fixtures.zon to
 record the adopted manifest/facts and selected neutral observations.
 Exit: resolved source/patch identity matches G0 and provenance is reviewable.
 This does not yet claim the consumer build is coherent.
 
-**F1 — Coherent native package and smoke test.** Depends on F0.
+**F1 — Coherent native package and smoke test.** Delivered for the selected
+0.738 baseline.
 Allowed writes: build.zig, build.zig.zon for packaged-file declarations,
 build_support/NativeBuild.zig, build_support/Profile.zig,
 build_support/NativeConsumerTests.zig, src/lib.zig, src/profile.zig,
@@ -262,8 +269,10 @@ not authority for arbitrary Luau edits. Preserve existing compiler entry points
 and default behavior. Exit: A01–A03 and relevant B/C tests pass, with complete
 route coverage and no unexplained accounting difference.
 
-**F4 — Fork delivery checkpoint.** Depends on F0/F1 and every required F2/F3
-patch; skipped conditional work must have a recorded reason.
+**F4 — Fork delivery checkpoint.** Delivered for F0/F1. F2 objective primitive
+patches were not required by a demonstrated used-primitive defect, and F3a/F3b
+compiler allocation work remains conditional on a Reified charge-domain
+decision.
 Write only docs/native-consumer.md and, when present,
 docs/compiler-allocation-feasibility.md for the final tested facts, patch list,
 and handoff. Repair code only within the responsible earlier scope.
@@ -303,9 +312,8 @@ old/new observations before changing the accepted profile.
 
 ## Fork completion before Reified adoption
 
-F1 provides the proposed local build steps used here. At the fork delivery
-boundary, use the package's selected toolchain and run normal non-incremental
-checks once:
+F1 provides the package build steps used here. At the fork delivery boundary,
+the selected pinned toolchain ran these normal non-incremental checks:
 
 ~~~sh
 zig fmt --check build.zig build.zig.zon src tests/native_consumer
@@ -314,6 +322,12 @@ zig build test
 zig build test-native-consumer
 zig build profile
 ~~~
+
+The candidate also ran `zig build test-native-consumer -Dcodegen=false`,
+`zig build profile -Doptimize=ReleaseSafe`, and repeated profile generation;
+the Debug/ReleaseSafe and codegen-disabled/enabled package and consumer checks
+passed. The generated version-2 facts were stable for identical inputs and
+changed when vector size or target CPU features changed.
 
 If F3a/F3b was required, also run the explicit isolated
 zig build test-compiler-allocation step. Run the exact focused primitive checks
@@ -326,11 +340,13 @@ test, compare generated facts with G0, and report the exact tested source/patch
 identities, fingerprint, changed primitive contracts, commands/results, and any
 accepted profile change. No automatic CI triggers are added.
 
-The fork checkpoint is complete when the dependency can be acquired, built,
-linked, and fingerprinted coherently; every necessary used-primitive correction
-is verified; and any required allocation extension has a proven bounded scope.
-If the profile owner requires a new compiler hook and its audit is unresolved,
-report that checkpoint as incomplete rather than claiming the bound.
+The fork candidate checkpoint is complete: the dependency can be acquired,
+built, linked, and fingerprinted coherently; the public `c`/`luaz` module
+closure reaches one support implementation; and no necessary used-primitive
+correction or allocation extension was identified in this candidate. If the
+Reified profile owner later requires a new compiler hook, reopen F3a/F3b with a
+reproducer and a charge-domain definition rather than treating this checkpoint
+as evidence for one.
 
 Only after this checkpoint should a separately authorized Reified workstream
 adopt the package boundary and perform narrow extraction/adaptation inside
@@ -340,6 +356,10 @@ behavioral/worker acceptance before switching the attested runtime. This plan
 does not prescribe those migration steps, edit Reified, or declare adoption done.
 
 ## Deferred scope and current blockers
+
+The candidate has no fork-local blocker. Reified adoption remains a separate
+checkpoint: it must validate its worker behavior, protected lifetime boundary,
+policy, containment, and profile observations against the selected package.
 
 Do not implement these earlier proposals in this fork:
 
@@ -358,13 +378,14 @@ primitive boundary, and its own scope/compatibility decision; this requirements
 document alone does not authorize it. Existing Reified worker-local allocation
 or containment mechanisms are outside the fork and are not changed by this plan.
 
-Current blocker: G0 has not supplied the exact attested source/build facts,
-used-primitive/native-consumer map, and required-bound definition. F0 is the
-smallest next implementation patch after that handoff. No primitive defect or
-need for F3b is established by the allowed evidence; those conditional patches
-must not be scheduled as mandatory work.
+The remaining handoff is not a fork-local blocker: Reified's profile owner must
+still supply or accept the worker-specific source/build observations,
+used-primitive/native-consumer map, and any required compiler-bound definition
+before Reified adoption. No primitive defect or need for F3b is established by
+the candidate evidence; those conditional patches must not be scheduled as
+mandatory work.
 
-Actual evidence reads: the complete capability requirements document, and this
-implementation plan during revisions. No source code, repository history, other
-documentation, external site, Reified file, build output, or test output was
-inspected. Only this Markdown plan was edited.
+Actual candidate evidence includes the Luaz source/build graph, Luau 0.738
+package identity, native consumer smoke tests, generated build facts, and the
+commands recorded above. Reified files and the active Reified coding workspace
+were not edited or adopted.

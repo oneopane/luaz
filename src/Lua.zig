@@ -230,6 +230,7 @@ pub fn enable_codegen(self: Self) bool {
 /// - `panic(state: *State, errcode: i32) void` - Called on unprotected errors (if longjmp is used)
 /// - `userthread(parent: ?*State, thread: *State) void` - Called when thread is created/destroyed
 /// - `useratom(s: []const u8) i16` - Called when string is created; returns atom ID
+///   Instance callbacks may instead use `useratom(state: *State, s: []const u8) i16`.
 /// - `debugbreak(debug: *Debug, ar: Debug.Info) void` - Called when breakpoint is hit. Note that breakpoints
 ///   set with `breakpoint(line)` in Lua code only trigger this callback - they don't automatically
 ///   interrupt execution. Call `debug.debugBreak()` within this callback to actually interrupt
@@ -237,9 +238,13 @@ pub fn enable_codegen(self: Self) bool {
 /// - `debugstep(debug: *Debug, ar: Debug.Info) void` - Called after each instruction in single step
 /// - `debuginterrupt(debug: *Debug, ar: Debug.Info) void` - Called on thread execution interrupt
 /// - `debugprotectederror(debug: *Debug) void` - Called when protected call results in error
-/// - `onallocate(state: *State, osize: usize, nsize: usize) void` - Called when a memory operation occurs
-///   (allocation when osize=0, deallocation when nsize=0, reallocation otherwise).
-///   Note: This callback is only triggered for Luau's internal allocations, not for all memory operations
+/// - `onallocate(state: *State, osize: usize, nsize: usize) void` - Called for an allocation
+///   or reallocation in Luau's internal allocator. In Luau 0.738, ordinary heap
+///   object/array frees are reported through `onfree` instead of reliably
+///   arriving here, so this callback is not a complete deallocation stream.
+/// - `onfree(state: *State, block: ?*anyopaque) void` - Called before Luau frees a
+///   heap object or array. This callback is distinct from `onallocate` and does
+///   not provide a byte count.
 ///
 /// Only methods that exist on the callbacks object will be set. Missing methods are ignored.
 ///
@@ -360,13 +365,13 @@ pub fn setCallbacks(self: Self, callbacks: anytype) void {
     if (@hasDecl(CallbackType, "useratom")) {
         cb.useratom = struct {
             fn wrapper(L: ?State.LuaState, s: [*c]const u8, l: usize) callconv(.c) i16 {
-                _ = L;
                 const slice = s[0..l];
 
                 if (comptime is_instance) {
-                    // Note: useratom doesn't receive a Lua state, so we can't access userdata directly.
-                    // This callback must remain static for now due to C API limitations.
-                    @compileError("useratom callback cannot be used with instance methods as it doesn't receive a Lua state parameter");
+                    var state = State{ .lua = L.? };
+                    const callbacks_struct = state.callbacks();
+                    const instance: *CallbackType = @ptrCast(@alignCast(callbacks_struct.userdata.?));
+                    return instance.useratom(&state, slice);
                 } else {
                     return CallbackType.useratom(slice);
                 }
@@ -485,6 +490,26 @@ pub fn setCallbacks(self: Self, callbacks: anytype) void {
         }.wrapper;
     } else {
         cb.onallocate = null;
+    }
+
+    if (@hasDecl(CallbackType, "onfree")) {
+        cb.onfree = struct {
+            fn wrapper(L: ?State.LuaState, block: ?*anyopaque) callconv(.c) void {
+                if (L) |lua_state| {
+                    var state = State{ .lua = lua_state };
+
+                    if (comptime is_instance) {
+                        const callbacks_struct = state.callbacks();
+                        const instance: *CallbackType = @ptrCast(@alignCast(callbacks_struct.userdata.?));
+                        instance.onfree(&state, block);
+                    } else {
+                        CallbackType.onfree(&state, block);
+                    }
+                }
+            }
+        }.wrapper;
+    } else {
+        cb.onfree = null;
     }
 }
 
