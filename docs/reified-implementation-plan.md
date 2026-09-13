@@ -6,11 +6,12 @@ its proposed runtime abstractions and implementation increments are retired,
 not outstanding obligations.
 
 Status: candidate delivery complete for the dependency-owned package boundary.
-The fork is pinned to Luau 0.738 and the native package, public module closure,
-support linkage, and deterministic build facts have been implemented and
-checked locally. This is not Reified adoption: the Reified worker still owns
-protected execution, policy, containment, and its own compatibility/profile
-acceptance.
+The fork is pinned to the coordinator-accepted Luau 0.737 baseline from the
+Reified packaged luaz 0.6.0 dependency. The native package, public module
+closure, support linkage, and deterministic build facts have been implemented
+and checked locally. This is not Reified adoption: the Reified worker still
+owns protected execution, policy, containment, and its own
+compatibility/profile acceptance.
 
 ## Evidence and responsibility
 
@@ -49,10 +50,16 @@ the mixed bridge wholesale.
 
 ## G0: exact baseline record
 
-The candidate resolves the previously ambiguous pin: Luau 0.738 at commit
-`c54f558b4d5748ab0658610b8ce0c432053e41eb`, with the Zig package content hash
-recorded in `build.zig.zon` and `tests/native_consumer/baseline.json`. The
-candidate does not silently preserve the older 0.702 or 0.737 identity.
+The coordinator accepted G0 from the Reified packaged luaz 0.6.0 baseline:
+Luau tag 0.737 with Zig package content hash
+`N-V-__8AADetGAEcdQuTr-nq27CyCea3jnhtkeu-EYaA03Lb`. Supplied evidence maps
+that tag to commit `62dbc0b4718e87fc746b02f969c91ca2a461b4cf`; Luaz records
+the mapping as supplied and accepted provenance, not as an independently
+resolved commit. The accepted profile is ReleaseSafe, codegen disabled,
+vector-size 4, `LUA_USE_LONGJMP=1`, C++17, and libc++.
+
+This supersedes the provisional 0.738 candidate and the older 0.702 evidence;
+the fork must not retain 0.738-only mechanisms merely for compatibility.
 
 The full profile-owner handoff remains a Reified adoption responsibility. The
 fork's effective package facts are now generated and checked by `zig build
@@ -210,15 +217,20 @@ These are future scopes, not authorization to perform them during this planning
 turn. Each patch has one owner. Shared build files have one integrating writer.
 Do not create optional files unless the corresponding need is demonstrated.
 
-**F0 — Exact pin and provenance.** Delivered for the selected 0.738 baseline.
-Write only build.zig.zon when alignment is needed, plus
-tests/native_consumer/baseline.json and tests/native_consumer/fixtures.zon to
-record the adopted manifest/facts and selected neutral observations.
+**F0 — Exact pin and provenance.** Delivered for the coordinator-accepted 0.737
+baseline. Write build.zig.zon and the corresponding build-facts identity in
+build.zig when alignment is needed, plus tests/native_consumer/baseline.json
+and tests/native_consumer/fixtures.zon to record the adopted manifest/facts
+and selected neutral observations.
 Exit: resolved source/patch identity matches G0 and provenance is reviewable.
 This does not yet claim the consumer build is coherent.
 
-**F1 — Coherent native package and smoke test.** Delivered for the selected
-0.738 baseline.
+**F0 historical note.** The earlier provisional 0.738 candidate was superseded
+by the accepted G0 above; its package-only receipt is retained only in local
+history, not as the active baseline.
+
+**F1 — Coherent native package and smoke test.** Delivered for the accepted
+0.737 baseline.
 Allowed writes: build.zig, build.zig.zon for packaged-file declarations,
 build_support/NativeBuild.zig, build_support/Profile.zig,
 build_support/NativeConsumerTests.zig, src/lib.zig, src/profile.zig,
@@ -317,18 +329,26 @@ the selected pinned toolchain ran these normal non-incremental checks:
 
 ~~~sh
 zig fmt --check build.zig build.zig.zon src tests/native_consumer
-zig build
-zig build test
-zig build test-native-consumer
+zig build -Doptimize=Debug -Dcodegen=false
+zig build test -Doptimize=Debug -Dcodegen=false
+zig build test-native-consumer -Doptimize=Debug -Dcodegen=false
+zig build -Doptimize=ReleaseSafe -Dcodegen=false
+zig build test -Doptimize=ReleaseSafe -Dcodegen=false
+zig build test-native-consumer -Doptimize=ReleaseSafe -Dcodegen=false
 zig build profile -Doptimize=ReleaseSafe -Dcodegen=false -Dvector-size=4
 ~~~
 
-The candidate also ran `zig build test-native-consumer -Dcodegen=false`,
-repeated the exact selected profile command, and varied vector size and target
-CPU features;
-the Debug/ReleaseSafe and codegen-disabled/enabled package and consumer checks
-passed. The generated version-2 facts were stable for identical inputs and
-changed when vector size or target CPU features changed.
+The candidate also ran the Debug and ReleaseSafe package, ordinary-test, and
+native-consumer checks with codegen enabled, repeated the exact selected
+profile command, and varied vector size. All checks passed. The generated
+version-2 facts were stable for identical inputs and changed when vector size
+changed. The final implementation revision and fingerprint are recorded in
+`docs/native-consumer.md` and `tests/native_consumer/baseline.json`.
+
+For this accepted G0 delivery, the implementation revision is
+`cb7a31e28d0a7d33c3c4a37a92c31103d44cb95d`, and the selected
+ReleaseSafe/codegen-disabled/vector-size-4 profile fingerprint is
+`522adcf844fbcfa96f7a02226093824b080273ab91295fc7bbe3966681712d9f`.
 
 If F3a/F3b was required, also run the explicit isolated
 zig build test-compiler-allocation step. Run the exact focused primitive checks
@@ -386,7 +406,9 @@ before Reified adoption. No primitive defect or need for F3b is established by
 the candidate evidence; those conditional patches must not be scheduled as
 mandatory work.
 
-Actual candidate evidence includes the Luaz source/build graph, Luau 0.738
-package identity, native consumer smoke tests, generated build facts, and the
-commands recorded above. Reified files and the active Reified coding workspace
-were not edited or adopted.
+Actual candidate evidence includes the Luaz source/build graph, the
+coordinator-accepted Luau 0.737 package identity, native consumer smoke tests,
+generated build facts, and the commands recorded above. The supplied commit
+mapping and G0 acceptance are recorded in the baseline and delivery documents;
+the mapping was not independently resolved in this fork. Reified files and
+the active Reified coding workspace were not edited or adopted.

@@ -1,7 +1,9 @@
 # Native consumer contract
 
-The 2026-09-12 candidate package builds Luau 0.738 (commit
-`c54f558b4d5748ab0658610b8ce0c432053e41eb`) as one native graph. Consumers may
+The 2026-09-12 candidate package builds the coordinator-accepted Luau 0.737
+baseline as one native graph. The supplied evidence maps that tag to commit
+`62dbc0b4718e87fc746b02f969c91ca2a461b4cf`; Luaz records that mapping as
+accepted provenance and does not independently resolve it. Consumers may
 import both documented Zig modules:
 
 ```zig
@@ -49,23 +51,27 @@ enabled. The focused commands were:
 
 ```sh
 zig fmt --check build.zig build.zig.zon src tests/native_consumer
-zig build
-zig build test
-zig build test-native-consumer
-zig build test-native-consumer -Dcodegen=false
+zig build -Doptimize=Debug -Dcodegen=false
+zig build test -Doptimize=Debug -Dcodegen=false
+zig build test-native-consumer -Doptimize=Debug -Dcodegen=false
+zig build -Doptimize=ReleaseSafe -Dcodegen=false
+zig build test -Doptimize=ReleaseSafe -Dcodegen=false
+zig build test-native-consumer -Doptimize=ReleaseSafe -Dcodegen=false
 zig build profile -Doptimize=ReleaseSafe -Dcodegen=false -Dvector-size=4
 ```
 
 This delivery is bound to Luaz implementation revision
-`4e616af5719a9b51f252de60e3ab536e59a135c2`. The selected profile is exactly
+`cb7a31e28d0a7d33c3c4a37a92c31103d44cb95d`. The selected profile is exactly
 `/opt/homebrew/bin/zig build profile -Doptimize=ReleaseSafe -Dcodegen=false -Dvector-size=4`;
 its effective options are `optimize=ReleaseSafe`, `codegen=false`, and
-`vector_size=4`.
+`vector_size=4`, with `LUA_USE_LONGJMP=1`, C++17, and libc++.
 
-The fingerprint below is the profile fingerprint at that implementation
-revision. The callback-test source is intentionally included in the package
-source digest, so the receipt records the post-test candidate rather than the
-earlier packaging-only revision.
+G0 provenance is recorded in `tests/native_consumer/baseline.json`: this is the
+Reified packaged luaz 0.6.0 baseline, and the 0.737 commit mapping is supplied
+and accepted evidence rather than an independent Luaz resolution. The
+fingerprint below is the profile fingerprint at the final implementation
+revision; the package source digest includes the callback coverage and the
+accepted dependency/build identity.
 
 The profile output is deterministic for repeated identical inputs and changes
 when the vector-size or target CPU feature set changes. Compiler allocation
@@ -74,17 +80,14 @@ candidate and are not claimed by these checks.
 
 For the host `aarch64-macos` / ReleaseSafe / vector-size-4 / codegen-disabled
 configuration, the checked fingerprint is
-`a48225cba8e2a7a7b81c432a27a352bfb404dff174ae903bc01f33a06ed830de`.
+`522adcf844fbcfa96f7a02226093824b080273ab91295fc7bbe3966681712d9f`.
 
 At that revision, focused callback trampoline coverage passed in the ordinary
 test artifact, including instance dispatch, state/block/string forwarding,
-return propagation, and clearing callbacks on replacement. The earlier
-packaging candidate's successful formatting, Debug and ReleaseSafe product
-builds, ordinary tests, native-consumer tests with codegen enabled and disabled,
-and profile variation checks remain reused evidence; the selected profile and
-ReleaseSafe codegen-disabled ordinary/native-consumer checks were rerun on this
-revision. Repeating the selected profile produced the same fingerprint;
-changing vector size or target CPU features produced a different fingerprint.
+return propagation, and clearing callbacks on replacement. Debug and
+ReleaseSafe product, ordinary-test, and native-consumer checks passed with
+codegen disabled and enabled. Repeating the selected profile produced the same
+fingerprint; changing vector size produced a different fingerprint.
 
 The package does not make arbitrary Luau calls safe across Zig cleanup or C++
 RAII frames when Luau uses `longjmp`. A consumer-owned protected native landing
