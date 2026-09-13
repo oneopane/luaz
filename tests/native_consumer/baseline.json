@@ -21,7 +21,7 @@
     "cxx_library": "libc++"
   },
   "candidate_delivery": {
-    "implementation_revision": "ca3f50b48a7d5631fbbd7c3193f0ba6158ca6bdd",
+    "implementation_revision": "4e616af5719a9b51f252de60e3ab536e59a135c2",
     "toolchain": {
       "path": "/opt/homebrew/bin/zig",
       "version": "0.16.0"
@@ -35,7 +35,7 @@
         "codegen": false,
         "vector_size": 4
       },
-      "fingerprint": "79ececf7a9dece184f130c0087178ab852cd6de72d19745543a38347986570a7"
+      "fingerprint": "a48225cba8e2a7a7b81c432a27a352bfb404dff174ae903bc01f33a06ed830de"
     },
     "checks": [
       {
