@@ -239,9 +239,10 @@ pub fn enable_codegen(self: Self) bool {
 /// - `debuginterrupt(debug: *Debug, ar: Debug.Info) void` - Called on thread execution interrupt
 /// - `debugprotectederror(debug: *Debug) void` - Called when protected call results in error
 /// - `onallocate(state: *State, osize: usize, nsize: usize) void` - Called for an allocation
-///   or reallocation in Luau's internal allocator. In Luau 0.738, ordinary heap
-///   object/array frees are reported through `onfree` instead of reliably
-///   arriving here, so this callback is not a complete deallocation stream.
+///   or reallocation in Luau's internal allocator. In the selected Luau
+///   baseline, ordinary heap object/array frees are reported through `onfree`
+///   instead of reliably arriving here, so this callback is not a complete
+///   deallocation stream.
 /// - `onfree(state: *State, block: ?*anyopaque) void` - Called before Luau frees a
 ///   heap object or array. This callback is distinct from `onallocate` and does
 ///   not provide a byte count.

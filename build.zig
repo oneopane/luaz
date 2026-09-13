@@ -562,9 +562,9 @@ fn buildFacts(
     try facts.appendSlice(gpa, "{\n");
     try appendJsonStringField(&facts, gpa, "schema", "luaz-build-facts-v2", true);
     try appendJsonStringField(&facts, gpa, "luaz_version", "0.6.0", true);
-    try appendJsonStringField(&facts, gpa, "luau_version", "0.738", true);
-    try appendJsonStringField(&facts, gpa, "luau_commit", "c54f558b4d5748ab0658610b8ce0c432053e41eb", true);
-    try appendJsonStringField(&facts, gpa, "luau_zig_content_hash", "N-V-__8AAPjfGgFG_Ps7mXvCH5VHQbc2TojbrtiKBntwm277", true);
+    try appendJsonStringField(&facts, gpa, "luau_version", "0.737", true);
+    try appendJsonStringField(&facts, gpa, "luau_commit", "62dbc0b4718e87fc746b02f969c91ca2a461b4cf", true);
+    try appendJsonStringField(&facts, gpa, "luau_zig_content_hash", "N-V-__8AADetGAEcdQuTr-nq27CyCea3jnhtkeu-EYaA03Lb", true);
     try appendJsonStringField(&facts, gpa, "target", triple, true);
     try appendJsonStringField(&facts, gpa, "zig", builtin.zig_version_string, true);
     try appendJsonStringField(&facts, gpa, "optimize", @tagName(optimize), true);
