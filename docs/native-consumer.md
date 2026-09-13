@@ -136,6 +136,26 @@ This delivery is bound to Luaz implementation revision
 its effective options are `optimize=ReleaseSafe`, `codegen=false`, and
 `vector_size=4`, with `LUA_USE_LONGJMP=1`, C++17, and libc++.
 
+The immutable Luaz implementation archive is
+`https://github.com/oneopane/luaz/archive/e0274e1edd64d7245cfb0d87b7a294d98918cf62.tar.gz`.
+Its Zig package content hash is
+`luaz-0.6.0-w-BJfD6PCAAMXd_Qzhh2auiKU8Fh4yXcf9yRUYbLgW0o`, independently
+reproduced with the pinned toolchain:
+
+```sh
+/opt/homebrew/bin/zig fetch https://github.com/oneopane/luaz/archive/e0274e1edd64d7245cfb0d87b7a294d98918cf62.tar.gz
+```
+
+This archive hash identifies Luaz, not its unchanged Luau dependency hash
+`N-V-__8AADetGAEcdQuTr-nq27CyCea3jnhtkeu-EYaA03Lb`, and not the selected build
+profile fingerprint `8ed5b5cf419951d97e738404d6d01e0ed8ecf90e5212113c42c07ed5439ec477`.
+Together the Luaz archive and selected profile identify the explicit changed
+Luaz package/profile compatibility boundary. This receipt supersedes delivery
+receipts `c5086fd4`, `cb7a31e2`, `522adcf8`, and
+`b34a9b1b496f885ced3628e07bcba088842b3f2a`; the implementation remains
+`e0274e1edd64d7245cfb0d87b7a294d98918cf62`. The receipt adds delivery evidence
+and does not change implementation behavior or claim Reified adoption.
+
 G0 provenance is recorded in `tests/native_consumer/baseline.json`: this is the
 Reified packaged luaz 0.6.0 baseline, and the 0.737 commit mapping is supplied
 and accepted evidence rather than an independent Luaz resolution. The

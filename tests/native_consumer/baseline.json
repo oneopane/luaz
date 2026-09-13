@@ -38,6 +38,19 @@
   },
   "candidate_delivery": {
     "implementation_revision": "e0274e1edd64d7245cfb0d87b7a294d98918cf62",
+    "luaz_package_archive": {
+      "url": "https://github.com/oneopane/luaz/archive/e0274e1edd64d7245cfb0d87b7a294d98918cf62.tar.gz",
+      "zig_content_hash": "luaz-0.6.0-w-BJfD6PCAAMXd_Qzhh2auiKU8Fh4yXcf9yRUYbLgW0o",
+      "verification_command": "/opt/homebrew/bin/zig fetch https://github.com/oneopane/luaz/archive/e0274e1edd64d7245cfb0d87b7a294d98918cf62.tar.gz",
+      "verification_result": "independently reproduced with pinned Zig 0.16.0"
+    },
+    "compatibility_boundary": "explicit changed Luaz package archive and selected build profile; distinct from unchanged Luau dependency content hash",
+    "superseded_delivery_receipts": [
+      "c5086fd4",
+      "cb7a31e2",
+      "522adcf8",
+      "b34a9b1b496f885ced3628e07bcba088842b3f2a"
+    ],
     "repair_base_receipt": "90237af7448e85aaaa137d9ff99405302ca1b243",
     "compiler_status_evidence": {
       "allocation_failure_with_meter_refusal": "runtime verified",

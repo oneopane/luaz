@@ -355,6 +355,18 @@ For this accepted G0 delivery, the implementation revision is
 ReleaseSafe/codegen-disabled/vector-size-4 profile fingerprint is
 `8ed5b5cf419951d97e738404d6d01e0ed8ecf90e5212113c42c07ed5439ec477`.
 
+The immutable implementation archive at
+`https://github.com/oneopane/luaz/archive/e0274e1edd64d7245cfb0d87b7a294d98918cf62.tar.gz`
+has independently reproduced Zig content hash
+`luaz-0.6.0-w-BJfD6PCAAMXd_Qzhh2auiKU8Fh4yXcf9yRUYbLgW0o`.
+This is the explicit changed Luaz package/profile compatibility boundary;
+the selected profile fingerprint above and the unchanged Luau dependency hash
+`N-V-__8AADetGAEcdQuTr-nq27CyCea3jnhtkeu-EYaA03Lb` identify different inputs.
+This evidence receipt supersedes delivery receipts `c5086fd4`, `cb7a31e2`,
+`522adcf8`, and `b34a9b1b496f885ced3628e07bcba088842b3f2a`, while retaining
+implementation `e0274e1edd64d7245cfb0d87b7a294d98918cf62`. The exact pinned
+`zig fetch` command is recorded in `docs/native-consumer.md` and the baseline.
+
 The separate package at `tests/external_consumer` also passed `zig build test`
 for Debug/ReleaseSafe with codegen disabled/enabled at vector size 4, plus
 ReleaseSafe/codegen-disabled/vector-size-3. It consumes the emitted public
