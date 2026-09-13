@@ -283,7 +283,8 @@ route coverage and no unexplained accounting difference.
 
 **F4 — Fork delivery checkpoint.** Delivered for F0/F1 and the demonstrated F2
 compiler exception defect. The replacement adds an artifact-owned config header
-and a package-owned noexcept compiler landing point with explicit exhaustion
+and a package-owned noexcept compiler landing point with distinct allocation-failure
+and output-limit dispositions
 and an inclusive output-copy ceiling. The accepted forward-repair scope is
 `build.zig`, `src/Compiler.zig`, `src/compiler.{h,cpp}`, and
 `tests/external_consumer/`; the native support artifact owns the wrapper and
@@ -350,21 +351,28 @@ changed. The final implementation revision and fingerprint are recorded in
 `docs/native-consumer.md` and `tests/native_consumer/baseline.json`.
 
 For this accepted G0 delivery, the implementation revision is
-`21107bf1d6a0312fba75e696c799bcc03893cb87`, and the selected
+`e0274e1edd64d7245cfb0d87b7a294d98918cf62`, and the selected
 ReleaseSafe/codegen-disabled/vector-size-4 profile fingerprint is
-`8e08ee8a06e21bdb63415906a47973d2dfb153e7668dc514349c8f1c656eff7d`.
+`8ed5b5cf419951d97e738404d6d01e0ed8ecf90e5212113c42c07ed5439ec477`.
 
 The separate package at `tests/external_consumer` also passed `zig build test`
 for Debug/ReleaseSafe with codegen disabled/enabled at vector size 4, plus
 ReleaseSafe/codegen-disabled/vector-size-3. It consumes the emitted public
 artifact include trees, including `luaz_config.h` and `luaz_compiler.h`, and
-checks native execution and explicit compiler exhaustion through both public
+checks native execution and distinct compiler dispositions through both public
 Zig modules. The exact 8192-space-plus-function source with a consumer-owned
-4096-byte allocation budget returns exhaustion, with no live C++ allocations.
+4096-byte allocation budget returns `allocation_failed` with the independent
+caller `meter_refused=true` latch and no live C++ allocations. An independent
+simulated test-only backing failure returns `allocation_failed` with `meter_refused=false`;
+the native outputs are null/zero and later calls recover. The package cannot
+infer the caller's budget classification from allocation failure alone.
 An allocation-budget sweep covers cleanup after successful allocations and
 recovery; ordinary tests cover inclusive bytecode and diagnostic output-copy
 bounds. Repeated profile output is identical, and changing vector size or using
 `-Dcpu=generic` changes its fingerprint. This does not claim F3 route completeness.
+Returned-copy malloc failure and internal-error branches are structurally reviewed,
+not fault-injected; no production allocator or classifier hooks were added.
+The ambiguous exhaustion alias is removed atomically from the fork's callers.
 
 If F3a/F3b was required, also run the explicit isolated
 zig build test-compiler-allocation step. Run the exact focused primitive checks

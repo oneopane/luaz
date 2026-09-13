@@ -37,7 +37,16 @@
     "cxx_library": "libc++"
   },
   "candidate_delivery": {
-    "implementation_revision": "21107bf1d6a0312fba75e696c799bcc03893cb87",
+    "implementation_revision": "e0274e1edd64d7245cfb0d87b7a294d98918cf62",
+    "repair_base_receipt": "90237af7448e85aaaa137d9ff99405302ca1b243",
+    "compiler_status_evidence": {
+      "allocation_failure_with_meter_refusal": "runtime verified",
+      "allocation_failure_without_meter_refusal": "runtime verified by simulated test-only operator-new backing failure",
+      "inclusive_output_limit_and_diagnostics": "runtime verified without meter refusal",
+      "returned_copy_malloc_null": "structurally reviewed; exact branch not fault-injected",
+      "other_exception_and_unexpected_empty": "structurally reviewed; not fault-injected",
+      "old_status_runtime_oracle": "base receipt failed NativeConsumerFailed when allocation status 4 was expected"
+    },
     "toolchain": {
       "path": "/opt/homebrew/bin/zig",
       "version": "0.16.0"
@@ -51,7 +60,7 @@
         "codegen": false,
         "vector_size": 4
       },
-      "fingerprint": "8e08ee8a06e21bdb63415906a47973d2dfb153e7668dc514349c8f1c656eff7d"
+      "fingerprint": "8ed5b5cf419951d97e738404d6d01e0ed8ecf90e5212113c42c07ed5439ec477"
     },
     "checks": [
       {
@@ -135,7 +144,7 @@
       {
         "cwd": "tests/external_consumer",
         "command": "/opt/homebrew/bin/zig build test -Doptimize=ReleaseSafe -Dcodegen=false -Dvector-size=4 --summary failures",
-        "result": "passed; artifact config header, explicit 4096-byte compiler exhaustion, allocation cleanup and recovery"
+        "result": "passed; artifact config header, distinct allocation/output statuses, independent meter-refusal evidence, allocation cleanup and recovery"
       },
       {
         "cwd": "tests/external_consumer",

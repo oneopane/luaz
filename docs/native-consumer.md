@@ -54,31 +54,52 @@ configuration header and asserts vector-size and longjmp agreement.
 The `luaz_support` artifact owns `luaz_compile_bounded`, declared in its public
 `luaz_compiler.h` header and exposed by the `c` module. The C++ function is
 `noexcept` and calls `Luau::compile` inside its exception landing point.
-`std::bad_alloc` returns `LUAZ_COMPILE_EXHAUSTED`; other escaping exceptions
-return `LUAZ_COMPILE_INTERNAL_ERROR`. Normal bytecode and encoded syntax errors
-return `LUAZ_COMPILE_OK` and `LUAZ_COMPILE_ERROR`, respectively. Both own a
+`std::bad_alloc` and returned-copy `malloc` failure return
+`LUAZ_COMPILE_ALLOCATION_FAILED`; other escaping exceptions and an unexpected
+empty compiler result return `LUAZ_COMPILE_INTERNAL_ERROR`. Normal bytecode and
+encoded syntax errors return `LUAZ_COMPILE_OK` and `LUAZ_COMPILE_ERROR`. Both own a
 `malloc` blob that the consumer frees exactly once with `free`.
 
 The inclusive output-copy ceiling applies to bytecode and encoded diagnostics
-before the returned blob is allocated or copied. Exhaustion/internal failure
+before the returned blob is allocated or copied. Exceeding it returns
+`LUAZ_COMPILE_OUTPUT_LIMIT_EXCEEDED`. Limit, allocation, and internal failure
 always return a null pointer and zero size. This ceiling does not bound the
 compiler's temporary C++ allocations. Compiler memory metering remains owned
 by the consumer; Luaz installs no production global allocator.
 
 `Compiler.compileBounded(source, options, output_limit)` exposes
-`ok`, `err`, `exhausted`, and `internal_error` without parsing diagnostics.
-Its result's `deinit` frees owned blobs and does nothing for the two empty
-dispositions. Existing `Compiler.compile` now uses this boundary with an
-unlimited output-copy ceiling, mapping exhaustion to `OutOfMemory` and internal
+`ok`, `err`, `output_limit_exceeded`, `allocation_failed`, and `internal_error`
+without parsing diagnostics. Its result's `deinit` frees owned blobs and does
+nothing for the three empty dispositions. `Compiler.compile` uses this boundary
+with a max-`usize` output-copy ceiling, mapping allocation failure to `OutOfMemory` and internal
 failure to `CompilerInternalError`. Raw upstream `c.luau_compile` remains
 available for compatibility, but does not provide this exception contract.
+The unreachable max-`usize` output-limit case conservatively maps to `OutOfMemory`.
+Stable C values are OK=0, ERROR=1, OUTPUT_LIMIT_EXCEEDED=2, INTERNAL_ERROR=3,
+and ALLOCATION_FAILED=4. The former ambiguous EXHAUSTED alias is removed.
 
 The external consumer installs a test-only throwing allocator. Exactly 8192
 spaces followed by a function under a 4096-byte compiler allocation budget
-returns explicit exhaustion to Zig and leaves no live compiler allocation.
-A budget sweep also checks exhaustion after successful allocations, complete
-C++ unwinding, and subsequent success. Ordinary tests check inclusive output
-bounds and distinguish syntax errors from exhaustion.
+returns `allocation_failed` to Zig with `meter_refused=true` and no live compiler
+allocation. A separate simulated test-only backing-allocation failure returns the same
+package status with `meter_refused=false`; the native result is null/zero, and
+later calls recover. A budget sweep checks refusal after successful allocations
+and complete C++ unwinding. The latch resets at invocation entry, is set only on
+budget rejection, and is captured before another invocation; nesting is rejected.
+The package status alone never proves caller-budget exhaustion. Inclusive output
+bounds, one-short bytecode, oversized diagnostics, syntax errors, and convenience
+`OutOfMemory` mapping are exercised through the actual external dependency.
+
+Reified retains disposition composition: `output_limit_exceeded` identifies the
+configured output bound, while `allocation_failed` requires the invocation's
+captured meter-refusal evidence to distinguish a configured compiler-memory bound
+from an unclassified allocation failure. `internal_error` remains an internal
+failure. Luaz supplies no production classifier or invocation policy.
+
+Returned-copy `malloc` failure, non-`bad_alloc` exceptions, and unexpected empty
+compiler output are structurally reviewed, not induced by these runtime tests.
+No isolated malloc interposer proves the exact returned-copy branch. This receipt
+does not claim those branches were fault-injected, nor compiler-route completeness.
 
 The package fixes `LUA_USE_LONGJMP=1` and applies the selected vector size to the
 VM, translated C declarations, Luaz support code, and native consumers. The
@@ -110,7 +131,7 @@ zig build profile -Doptimize=ReleaseSafe -Dcodegen=false -Dvector-size=4
 ```
 
 This delivery is bound to Luaz implementation revision
-`21107bf1d6a0312fba75e696c799bcc03893cb87`. The selected profile is exactly
+`e0274e1edd64d7245cfb0d87b7a294d98918cf62`. The selected profile is exactly
 `/opt/homebrew/bin/zig build profile -Doptimize=ReleaseSafe -Dcodegen=false -Dvector-size=4`;
 its effective options are `optimize=ReleaseSafe`, `codegen=false`, and
 `vector_size=4`, with `LUA_USE_LONGJMP=1`, C++17, and libc++.
@@ -129,7 +150,7 @@ candidate and are not claimed by these checks.
 
 For the host `aarch64-macos` / ReleaseSafe / vector-size-4 / codegen-disabled
 configuration, the checked fingerprint is
-`8e08ee8a06e21bdb63415906a47973d2dfb153e7668dc514349c8f1c656eff7d`.
+`8ed5b5cf419951d97e738404d6d01e0ed8ecf90e5212113c42c07ed5439ec477`.
 
 At that revision, focused callback trampoline coverage passed in the ordinary
 test artifact, including instance dispatch, state/block/string forwarding,
@@ -137,6 +158,9 @@ return propagation, and clearing callbacks on replacement. Debug and
 ReleaseSafe product, ordinary-test, and native-consumer checks passed with
 codegen disabled and enabled. Repeating the selected profile produced the same
 fingerprint; changing vector size produced a different fingerprint.
+Independent review reported no implementation P1/P2 findings against the frozen
+implementation, reran external Debug and ReleaseSafe/codegen-disabled/vector-4
+checks, and reproduced the selected fingerprint.
 
 The replacement implementation was checked with `/opt/homebrew/bin/zig`
 0.16.0 using the following exact command families (each brace alternative was
@@ -156,14 +180,15 @@ run independently):
 ```
 
 All product, ordinary (93), native (3), and external consumer checks passed.
-The external config-header oracle first failed against receipt
-`c5086fd4651998f4b31d2ef31f7dff1ab34a7d15` with `luaz_config.h file not found`,
-then passed after the artifact-owned header repair. The compiler exhaustion
-oracle and inclusive-output-bound tests pass on the replacement. The selected
+The artifact-owned emitted-header repair remains present. Against base receipt
+`90237af7448e85aaaa137d9ff99405302ca1b243`, the external Debug/codegen-disabled
+oracle expected stable allocation status 4 and failed at runtime with
+`NativeConsumerFailed`; after the status split, it passed. An earlier attempt
+stopped at `NoSpaceLeft` and is not counted as behavioral evidence. The selected
 fingerprint repeated identically; vector size 3 produced
-`1544b0e5d43b938915f063f8b70da935f185e7b68497d8322688ccd83e90ac92`, and
+`29d390d99d8698ba542721e2bbfe765ea35fedad3fa697c3e226f9acdc49e110`, and
 `-Dcpu=generic` produced
-`71807351d0f151467d6ef1f790985e017d5a39817c75cb07c027916d9c6cf27b`.
+`bd74bc2b0ee4a26e4c85cd96b49b7bab9386812a7bec01b62a20ed1093ef27b9`.
 The selected profile output was restored after variant checks. These facts hash
 the production source/build inputs, including the new native compiler wrapper;
 the external fixture itself is bound by the immutable implementation revision.
