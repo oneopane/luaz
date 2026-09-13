@@ -96,10 +96,18 @@ captured meter-refusal evidence to distinguish a configured compiler-memory boun
 from an unclassified allocation failure. `internal_error` remains an internal
 failure. Luaz supplies no production classifier or invocation policy.
 
-Returned-copy `malloc` failure, non-`bad_alloc` exceptions, and unexpected empty
-compiler output are structurally reviewed, not induced by these runtime tests.
-No isolated malloc interposer proves the exact returned-copy branch. This receipt
-does not claim those branches were fault-injected, nor compiler-route completeness.
+The external fixture's default-off `-Dtest-copy-injection=true` option binds only
+the support compilation's returned-copy allocation to a C++-linkage helper.
+Normal builds call `std::malloc` directly. The helper passes through to malloc,
+returns null, or throws a non-`bad_alloc` sentinel; it never manufactures a status.
+Its invocation-reset thread-local state records copy attempts and live compiler
+bytes. Null and throw each reach exactly one copy attempt with heap-backed result
+storage live, return null/zero output without meter refusal, unwind all compiler
+storage, and recover on the next invocation. They produce `allocation_failed` /
+`OutOfMemory` and `internal_error` / `CompilerInternalError`, respectively.
+Concurrent invocations with different modes also preserve isolation.
+Unexpected empty compiler output remains a structural-only guard: these tests
+do not induce that compiler result or claim compiler-route completeness.
 
 The package fixes `LUA_USE_LONGJMP=1` and applies the selected vector size to the
 VM, translated C declarations, Luaz support code, and native consumers. The
@@ -131,24 +139,24 @@ zig build profile -Doptimize=ReleaseSafe -Dcodegen=false -Dvector-size=4
 ```
 
 This delivery is bound to Luaz implementation revision
-`e0274e1edd64d7245cfb0d87b7a294d98918cf62`. The selected profile is exactly
+`9841f98dc93b06271064b4b3e6caebb9f3a6afb4`. The selected profile is exactly
 `/opt/homebrew/bin/zig build profile -Doptimize=ReleaseSafe -Dcodegen=false -Dvector-size=4`;
 its effective options are `optimize=ReleaseSafe`, `codegen=false`, and
 `vector_size=4`, with `LUA_USE_LONGJMP=1`, C++17, and libc++.
 
 The immutable Luaz implementation archive is
-`https://github.com/oneopane/luaz/archive/e0274e1edd64d7245cfb0d87b7a294d98918cf62.tar.gz`.
+`https://github.com/oneopane/luaz/archive/9841f98dc93b06271064b4b3e6caebb9f3a6afb4.tar.gz`.
 Its Zig package content hash is
-`luaz-0.6.0-w-BJfD6PCAAMXd_Qzhh2auiKU8Fh4yXcf9yRUYbLgW0o`, independently
+`luaz-0.6.0-w-BJfCW_CACbmF-JQeS046Dgd-tiZ5GWm-eqDm2P_2_S`, independently
 reproduced with the pinned toolchain:
 
 ```sh
-/opt/homebrew/bin/zig fetch https://github.com/oneopane/luaz/archive/e0274e1edd64d7245cfb0d87b7a294d98918cf62.tar.gz
+/opt/homebrew/bin/zig fetch https://github.com/oneopane/luaz/archive/9841f98dc93b06271064b4b3e6caebb9f3a6afb4.tar.gz
 ```
 
 This archive hash identifies Luaz, not its unchanged Luau dependency hash
 `N-V-__8AADetGAEcdQuTr-nq27CyCea3jnhtkeu-EYaA03Lb`, and not the selected build
-profile fingerprint `8ed5b5cf419951d97e738404d6d01e0ed8ecf90e5212113c42c07ed5439ec477`.
+profile fingerprint `65eeb078188465504d3403b3a9a75a3b562c727f505570ad2747fd0e70b8d93f`.
 Together the Luaz archive and selected profile identify the explicit changed
 Luaz package/profile compatibility boundary. This receipt supersedes delivery
 receipts `c5086fd4651998f4b31d2ef31f7dff1ab34a7d15`,
@@ -156,7 +164,7 @@ receipts `c5086fd4651998f4b31d2ef31f7dff1ab34a7d15`,
 `b34a9b1b496f885ced3628e07bcba088842b3f2a`; implementation revision
 `cb7a31e28d0a7d33c3c4a37a92c31103d44cb95d`; and profile fingerprint
 `522adcf844fbcfa96f7a02226093824b080273ab91295fc7bbe3966681712d9f`.
-The current implementation remains `e0274e1edd64d7245cfb0d87b7a294d98918cf62`.
+The current implementation remains `9841f98dc93b06271064b4b3e6caebb9f3a6afb4`.
 The receipt adds delivery evidence and does not change implementation behavior
 or claim Reified adoption.
 
@@ -174,48 +182,72 @@ candidate and are not claimed by these checks.
 
 For the host `aarch64-macos` / ReleaseSafe / vector-size-4 / codegen-disabled
 configuration, the checked fingerprint is
-`8ed5b5cf419951d97e738404d6d01e0ed8ecf90e5212113c42c07ed5439ec477`.
+`65eeb078188465504d3403b3a9a75a3b562c727f505570ad2747fd0e70b8d93f`.
 
-At that revision, focused callback trampoline coverage passed in the ordinary
-test artifact, including instance dispatch, state/block/string forwarding,
-return propagation, and clearing callbacks on replacement. Debug and
-ReleaseSafe product, ordinary-test, and native-consumer checks passed with
-codegen disabled and enabled. Repeating the selected profile produced the same
-fingerprint; changing vector size produced a different fingerprint.
-Independent review reported no implementation P1/P2 findings against the frozen
-implementation, reran external Debug and ReleaseSafe/codegen-disabled/vector-4
-checks, and reproduced the selected fingerprint.
+The canonical coordination base and new all-status gate checkpoint is receipt
+`9af2df837710180f319771ef6e17c339056e39b7` (`9af2df83`), over implementation
+`e0274e1edd64d7245cfb0d87b7a294d98918cf62`. That receipt is superseded for final
+adoption by this reviewed descendant implementation and its delivery evidence.
+Its former Luaz package hash
+`luaz-0.6.0-w-BJfD6PCAAMXd_Qzhh2auiKU8Fh4yXcf9yRUYbLgW0o`
+and selected profile fingerprint
+`8ed5b5cf419951d97e738404d6d01e0ed8ecf90e5212113c42c07ed5439ec477`
+are superseded identities. The Luau hash and accepted G0 are unchanged.
+This fork-only receipt does not claim Reified adoption or authorize Coding work.
 
-The replacement implementation was checked with `/opt/homebrew/bin/zig`
-0.16.0 using the following exact command families (each brace alternative was
-run independently):
+Before changing the copy allocation in `src/compiler.cpp`, the injected external
+Debug/codegen-disabled oracle was run independently with null mode first and
+non-`bad_alloc` throw mode first. Each failed at runtime with
+`ExpectedReturnedCopyFailure` against the unchanged `9af2df83` compiler path.
+After adding the compile-time allocator binding, both passed. The five runtime
+statuses are covered: valid bytecode and invalid-source diagnostics are returned
+and freed; the exact output ceiling succeeds with one copy attempt; one-short
+with throw injection armed returns `output_limit_exceeded` with zero attempts;
+the 8192-spaces-plus-function/4096-byte meter returns `allocation_failed` with
+refusal true; backing failure returns `allocation_failed` with refusal false.
+Returned-copy null returns `allocation_failed`, and non-`bad_alloc` throw returns
+`internal_error`, each with refusal false, one injection reached, heap-backed
+result storage live at injection, null/zero output, complete cleanup, and recovery.
+Convenience mappings are `OutOfMemory` and `CompilerInternalError`. Invocation
+reset and concurrent two-thread isolation pass. Unexpected-empty output remains
+structural-only because the fixture does not induce that compiler result.
+
+Independent review accepted the immutable implementation with no P1/P2 findings.
+It verified eight external profiles (Debug/ReleaseSafe × CodeGen off/on ×
+injection off/on), plus injected ReleaseSafe/codegen-off/vector-size-3; four
+normal product/ordinary/native profiles each passed 96/96 tests (93 ordinary
+and 3 native). Formatting passed. `nm -u zig-out/lib/libluaz_support.a` confirmed
+that normal support has no test-helper reference. The selected normal profile
+repeated identically; injected, vector-size-3, and generic-CPU profiles differed.
+The default-off injection flag and its support macro are recorded in build facts;
+the selected adoption profile keeps injection disabled.
+
+The exact check families use pinned `/opt/homebrew/bin/zig` 0.16.0; each brace
+alternative is a separate invocation:
 
 ```sh
 /opt/homebrew/bin/zig fmt --check build.zig build.zig.zon src tests
 /opt/homebrew/bin/zig build -Doptimize={Debug,ReleaseSafe} -Dcodegen={false,true} -Dvector-size=4 --summary failures
 /opt/homebrew/bin/zig build test test-native-consumer -Doptimize={Debug,ReleaseSafe} -Dcodegen={false,true} -Dvector-size=4 --summary failures
 # From tests/external_consumer:
-/opt/homebrew/bin/zig build test -Doptimize={Debug,ReleaseSafe} -Dcodegen={false,true} -Dvector-size=4 --summary failures
-/opt/homebrew/bin/zig build test -Doptimize=ReleaseSafe -Dcodegen=false -Dvector-size=3 --summary failures
+/opt/homebrew/bin/zig build test -Doptimize={Debug,ReleaseSafe} -Dcodegen={false,true} -Dvector-size=4 -Dtest-copy-injection={false,true} --summary failures
+/opt/homebrew/bin/zig build test -Doptimize=ReleaseSafe -Dcodegen=false -Dvector-size=3 -Dtest-copy-injection=true --summary failures
 # From the package root:
 /opt/homebrew/bin/zig build profile -Doptimize=ReleaseSafe -Dcodegen=false -Dvector-size=4
 /opt/homebrew/bin/zig build profile -Doptimize=ReleaseSafe -Dcodegen=false -Dvector-size=3
 /opt/homebrew/bin/zig build profile -Doptimize=ReleaseSafe -Dcodegen=false -Dvector-size=4 -Dcpu=generic
+/opt/homebrew/bin/zig build profile -Doptimize=ReleaseSafe -Dcodegen=false -Dvector-size=4 -Dtest-copy-injection=true
 ```
 
-All product, ordinary (93), native (3), and external consumer checks passed.
-The artifact-owned emitted-header repair remains present. Against base receipt
-`90237af7448e85aaaa137d9ff99405302ca1b243`, the external Debug/codegen-disabled
-oracle expected stable allocation status 4 and failed at runtime with
-`NativeConsumerFailed`; after the status split, it passed. An earlier attempt
-stopped at `NoSpaceLeft` and is not counted as behavioral evidence. The selected
-fingerprint repeated identically; vector size 3 produced
-`29d390d99d8698ba542721e2bbfe765ea35fedad3fa697c3e226f9acdc49e110`, and
-`-Dcpu=generic` produced
-`bd74bc2b0ee4a26e4c85cd96b49b7bab9386812a7bec01b62a20ed1093ef27b9`.
-The selected profile output was restored after variant checks. These facts hash
-the production source/build inputs, including the new native compiler wrapper;
-the external fixture itself is bound by the immutable implementation revision.
+JSON and SHA-256 validation passed. Vector-size-3 fingerprint:
+`67b10b7ff4e38185be1fd2e1afc4cff35d55bdd9224aa1c7900e16f3a963d843`;
+generic-CPU fingerprint:
+`4947233704dde36389e347922541ea5b2b071a6be9373ac9d5160ee17de34e91`;
+injected fingerprint:
+`9519b56c822b5444f99ea646651de0c649827aeb1becdc6dbdc34247439d09e6`.
+The selected normal profile was restored after variant checks. These facts hash
+production source/build inputs; the external fixture is bound by the immutable
+implementation revision.
 
 The package does not make arbitrary Luau calls safe across Zig cleanup or C++
 RAII frames when Luau uses `longjmp`. A consumer-owned protected native landing

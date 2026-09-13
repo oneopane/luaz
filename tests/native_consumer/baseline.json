@@ -37,35 +37,45 @@
     "cxx_library": "libc++"
   },
   "candidate_delivery": {
-    "implementation_revision": "e0274e1edd64d7245cfb0d87b7a294d98918cf62",
+    "implementation_revision": "9841f98dc93b06271064b4b3e6caebb9f3a6afb4",
     "luaz_package_archive": {
-      "url": "https://github.com/oneopane/luaz/archive/e0274e1edd64d7245cfb0d87b7a294d98918cf62.tar.gz",
-      "zig_content_hash": "luaz-0.6.0-w-BJfD6PCAAMXd_Qzhh2auiKU8Fh4yXcf9yRUYbLgW0o",
-      "verification_command": "/opt/homebrew/bin/zig fetch https://github.com/oneopane/luaz/archive/e0274e1edd64d7245cfb0d87b7a294d98918cf62.tar.gz",
-      "verification_result": "independently reproduced with pinned Zig 0.16.0"
+      "url": "https://github.com/oneopane/luaz/archive/9841f98dc93b06271064b4b3e6caebb9f3a6afb4.tar.gz",
+      "zig_content_hash": "luaz-0.6.0-w-BJfCW_CACbmF-JQeS046Dgd-tiZ5GWm-eqDm2P_2_S",
+      "verification_command": "/opt/homebrew/bin/zig fetch https://github.com/oneopane/luaz/archive/9841f98dc93b06271064b4b3e6caebb9f3a6afb4.tar.gz",
+      "verification_result": "independently regenerated with pinned Zig 0.16.0; coordinator supplied published archive verification"
     },
     "compatibility_boundary": "explicit changed Luaz package archive and selected build profile; distinct from unchanged Luau dependency content hash",
     "superseded_identities": {
       "delivery_receipts": [
         "c5086fd4651998f4b31d2ef31f7dff1ab34a7d15",
         "90237af7448e85aaaa137d9ff99405302ca1b243",
-        "b34a9b1b496f885ced3628e07bcba088842b3f2a"
+        "b34a9b1b496f885ced3628e07bcba088842b3f2a",
+        "9af2df837710180f319771ef6e17c339056e39b7"
       ],
       "implementation_revisions": [
-        "cb7a31e28d0a7d33c3c4a37a92c31103d44cb95d"
+        "cb7a31e28d0a7d33c3c4a37a92c31103d44cb95d",
+        "e0274e1edd64d7245cfb0d87b7a294d98918cf62"
       ],
       "profile_fingerprints": [
-        "522adcf844fbcfa96f7a02226093824b080273ab91295fc7bbe3966681712d9f"
+        "522adcf844fbcfa96f7a02226093824b080273ab91295fc7bbe3966681712d9f",
+        "8ed5b5cf419951d97e738404d6d01e0ed8ecf90e5212113c42c07ed5439ec477"
+      ],
+      "luaz_package_content_hashes": [
+        "luaz-0.6.0-w-BJfD6PCAAMXd_Qzhh2auiKU8Fh4yXcf9yRUYbLgW0o"
       ]
     },
-    "repair_base_receipt": "90237af7448e85aaaa137d9ff99405302ca1b243",
+    "repair_base_receipt": "9af2df837710180f319771ef6e17c339056e39b7",
     "compiler_status_evidence": {
-      "allocation_failure_with_meter_refusal": "runtime verified",
-      "allocation_failure_without_meter_refusal": "runtime verified by simulated test-only operator-new backing failure",
-      "inclusive_output_limit_and_diagnostics": "runtime verified without meter refusal",
-      "returned_copy_malloc_null": "structurally reviewed; exact branch not fault-injected",
-      "other_exception_and_unexpected_empty": "structurally reviewed; not fault-injected",
-      "old_status_runtime_oracle": "base receipt failed NativeConsumerFailed when allocation status 4 was expected"
+      "ok": "runtime verified valid bytecode and free",
+      "compile_error": "runtime verified invalid-source diagnostic and free",
+      "allocation_failure_with_meter_refusal": "runtime verified exact 8192 spaces plus function / 4096-byte meter; refusal true, zero copy attempts, zero live bytes, recovery",
+      "allocation_failure_without_meter_refusal": "runtime verified simulated operator-new backing failure; refusal false, cleanup, recovery",
+      "inclusive_output_limit_and_diagnostics": "runtime verified exact ceiling success with one copy; one-short with throw armed yields output_limit_exceeded with zero copies",
+      "returned_copy_malloc_null": "runtime injected allocation_failed; refusal false, one injection reached, heap-backed result live, null/zero output, zero live bytes after unwinding, recovery; convenience OutOfMemory",
+      "other_exception": "runtime injected non-bad_alloc sentinel gives internal_error; refusal false, one injection reached, heap-backed result live, null/zero output, zero live bytes after unwinding, recovery; convenience CompilerInternalError",
+      "unexpected_empty": "structural-only guard; fixture does not induce an empty compiler result",
+      "red_green": "separate null-first and throw-first external Debug/codegen-off runs failed ExpectedReturnedCopyFailure against unchanged compiler.cpp from 9af2df83; both green after binding",
+      "isolation": "invocation-reset thread-local state and concurrent two-thread differing modes passed"
     },
     "toolchain": {
       "path": "/opt/homebrew/bin/zig",
@@ -78,9 +88,10 @@
       "options": {
         "optimize": "ReleaseSafe",
         "codegen": false,
-        "vector_size": 4
+        "vector_size": 4,
+        "test_copy_injection": false
       },
-      "fingerprint": "8ed5b5cf419951d97e738404d6d01e0ed8ecf90e5212113c42c07ed5439ec477"
+      "fingerprint": "65eeb078188465504d3403b3a9a75a3b562c727f505570ad2747fd0e70b8d93f"
     },
     "checks": [
       {
@@ -173,10 +184,42 @@
       },
       {
         "cwd": "tests/external_consumer",
-        "command": "/opt/homebrew/bin/zig build test -Doptimize=ReleaseSafe -Dcodegen=false -Dvector-size=3 --summary failures",
+        "command": "/opt/homebrew/bin/zig build test -Doptimize={Debug,ReleaseSafe} -Dcodegen={false,true} -Dvector-size=4 -Dtest-copy-injection={false,true} --summary failures",
+        "result": "all eight independent invocations passed"
+      },
+      {
+        "cwd": "tests/external_consumer",
+        "command": "/opt/homebrew/bin/zig build test -Doptimize=ReleaseSafe -Dcodegen=false -Dvector-size=3 -Dtest-copy-injection=true --summary failures",
         "result": "passed"
+      },
+      {
+        "command": "nm -u zig-out/lib/libluaz_support.a",
+        "result": "normal artifact has no luaz_test_returned_copy_allocate reference"
+      },
+      {
+        "command": "/opt/homebrew/bin/zig build profile -Doptimize=ReleaseSafe -Dcodegen=false -Dvector-size=4 -Dtest-copy-injection=true",
+        "result": "passed; injected fingerprint differs from normal; JSON and SHA-256 validated"
       }
-    ]
+    ],
+    "canonical_coordination_gate_checkpoint": "9af2df837710180f319771ef6e17c339056e39b7",
+    "adoption_status": "9af2df83 superseded for final adoption by this reviewed descendant; no Reified adoption claimed",
+    "independent_review": {
+      "implementation_revision": "9841f98dc93b06271064b4b3e6caebb9f3a6afb4",
+      "p1_findings": 0,
+      "p2_findings": 0,
+      "external_profiles": 8,
+      "additional_injected_vector3_profiles": 1,
+      "normal_product_profiles": 4,
+      "tests_per_profile": {
+        "ordinary": 93,
+        "native": 3,
+        "total": 96
+      },
+      "format": "passed",
+      "normal_artifact_symbol_isolation": "nm found no test-helper reference",
+      "profile_repeat": "identical",
+      "profile_variants": "injected, vector-size-3, and generic CPU distinct"
+    }
   },
   "reference_baseline": {
     "source": "Reified packaged luaz 0.6.0 baseline",

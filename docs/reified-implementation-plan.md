@@ -351,14 +351,14 @@ changed. The final implementation revision and fingerprint are recorded in
 `docs/native-consumer.md` and `tests/native_consumer/baseline.json`.
 
 For this accepted G0 delivery, the implementation revision is
-`e0274e1edd64d7245cfb0d87b7a294d98918cf62`, and the selected
+`9841f98dc93b06271064b4b3e6caebb9f3a6afb4`, and the selected
 ReleaseSafe/codegen-disabled/vector-size-4 profile fingerprint is
-`8ed5b5cf419951d97e738404d6d01e0ed8ecf90e5212113c42c07ed5439ec477`.
+`65eeb078188465504d3403b3a9a75a3b562c727f505570ad2747fd0e70b8d93f`.
 
 The immutable implementation archive at
-`https://github.com/oneopane/luaz/archive/e0274e1edd64d7245cfb0d87b7a294d98918cf62.tar.gz`
+`https://github.com/oneopane/luaz/archive/9841f98dc93b06271064b4b3e6caebb9f3a6afb4.tar.gz`
 has independently reproduced Zig content hash
-`luaz-0.6.0-w-BJfD6PCAAMXd_Qzhh2auiKU8Fh4yXcf9yRUYbLgW0o`.
+`luaz-0.6.0-w-BJfCW_CACbmF-JQeS046Dgd-tiZ5GWm-eqDm2P_2_S`.
 This is the explicit changed Luaz package/profile compatibility boundary;
 the selected profile fingerprint above and the unchanged Luau dependency hash
 `N-V-__8AADetGAEcdQuTr-nq27CyCea3jnhtkeu-EYaA03Lb` identify different inputs.
@@ -368,28 +368,51 @@ This evidence receipt supersedes delivery receipts
 `b34a9b1b496f885ced3628e07bcba088842b3f2a`; implementation revision
 `cb7a31e28d0a7d33c3c4a37a92c31103d44cb95d`; and profile fingerprint
 `522adcf844fbcfa96f7a02226093824b080273ab91295fc7bbe3966681712d9f`.
-It retains current implementation `e0274e1edd64d7245cfb0d87b7a294d98918cf62`.
+It retains current implementation `9841f98dc93b06271064b4b3e6caebb9f3a6afb4`.
 The exact pinned `zig fetch` command is recorded in `docs/native-consumer.md`
 and the baseline.
 
-The separate package at `tests/external_consumer` also passed `zig build test`
-for Debug/ReleaseSafe with codegen disabled/enabled at vector size 4, plus
-ReleaseSafe/codegen-disabled/vector-size-3. It consumes the emitted public
-artifact include trees, including `luaz_config.h` and `luaz_compiler.h`, and
-checks native execution and distinct compiler dispositions through both public
-Zig modules. The exact 8192-space-plus-function source with a consumer-owned
-4096-byte allocation budget returns `allocation_failed` with the independent
-caller `meter_refused=true` latch and no live C++ allocations. An independent
-simulated test-only backing failure returns `allocation_failed` with `meter_refused=false`;
-the native outputs are null/zero and later calls recover. The package cannot
-infer the caller's budget classification from allocation failure alone.
-An allocation-budget sweep covers cleanup after successful allocations and
-recovery; ordinary tests cover inclusive bytecode and diagnostic output-copy
-bounds. Repeated profile output is identical, and changing vector size or using
-`-Dcpu=generic` changes its fingerprint. This does not claim F3 route completeness.
-Returned-copy malloc failure and internal-error branches are structurally reviewed,
-not fault-injected; no production allocator or classifier hooks were added.
-The ambiguous exhaustion alias is removed atomically from the fork's callers.
+The canonical coordination base and new all-status gate checkpoint is receipt
+`9af2df837710180f319771ef6e17c339056e39b7` (`9af2df83`), over implementation
+`e0274e1edd64d7245cfb0d87b7a294d98918cf62`. That receipt is superseded for final
+adoption by this reviewed descendant implementation and its delivery evidence.
+Its former Luaz package hash
+`luaz-0.6.0-w-BJfD6PCAAMXd_Qzhh2auiKU8Fh4yXcf9yRUYbLgW0o`
+and selected profile fingerprint
+`8ed5b5cf419951d97e738404d6d01e0ed8ecf90e5212113c42c07ed5439ec477`
+are superseded identities. The Luau hash and accepted G0 are unchanged.
+This fork-only receipt does not claim Reified adoption or authorize Coding work.
+
+Before changing the copy allocation in `src/compiler.cpp`, the injected external
+Debug/codegen-disabled oracle was run independently with null mode first and
+non-`bad_alloc` throw mode first. Each failed at runtime with
+`ExpectedReturnedCopyFailure` against the unchanged `9af2df83` compiler path.
+After adding the compile-time allocator binding, both passed. The five runtime
+statuses are covered: valid bytecode and invalid-source diagnostics are returned
+and freed; the exact output ceiling succeeds with one copy attempt; one-short
+with throw injection armed returns `output_limit_exceeded` with zero attempts;
+the 8192-spaces-plus-function/4096-byte meter returns `allocation_failed` with
+refusal true; backing failure returns `allocation_failed` with refusal false.
+Returned-copy null returns `allocation_failed`, and non-`bad_alloc` throw returns
+`internal_error`, each with refusal false, one injection reached, heap-backed
+result storage live at injection, null/zero output, complete cleanup, and recovery.
+Convenience mappings are `OutOfMemory` and `CompilerInternalError`. Invocation
+reset and concurrent two-thread isolation pass. Unexpected-empty output remains
+structural-only because the fixture does not induce that compiler result.
+
+Independent review accepted the immutable implementation with no P1/P2 findings.
+It verified eight external profiles (Debug/ReleaseSafe × CodeGen off/on ×
+injection off/on), plus injected ReleaseSafe/codegen-off/vector-size-3; four
+normal product/ordinary/native profiles each passed 96/96 tests (93 ordinary
+and 3 native). Formatting passed. `nm -u zig-out/lib/libluaz_support.a` confirmed
+that normal support has no test-helper reference. The selected normal profile
+repeated identically; injected, vector-size-3, and generic-CPU profiles differed.
+The default-off injection flag and its support macro are recorded in build facts;
+the selected adoption profile keeps injection disabled.
+
+The external fixture uses emitted public artifact include trees. The test-only
+binding preserves the production ABI and all five dispositions; no production
+allocator or classifier callback was added. This is not F3 route completeness.
 
 If F3a/F3b was required, also run the explicit isolated
 zig build test-compiler-allocation step. Run the exact focused primitive checks
