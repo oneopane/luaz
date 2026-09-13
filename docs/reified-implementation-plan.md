@@ -281,10 +281,14 @@ not authority for arbitrary Luau edits. Preserve existing compiler entry points
 and default behavior. Exit: A01–A03 and relevant B/C tests pass, with complete
 route coverage and no unexplained accounting difference.
 
-**F4 — Fork delivery checkpoint.** Delivered for F0/F1. F2 objective primitive
-patches were not required by a demonstrated used-primitive defect, and F3a/F3b
-compiler allocation work remains conditional on a Reified charge-domain
-decision.
+**F4 — Fork delivery checkpoint.** Delivered for F0/F1 and the demonstrated F2
+compiler exception defect. The replacement adds an artifact-owned config header
+and a package-owned noexcept compiler landing point with explicit exhaustion
+and an inclusive output-copy ceiling. The accepted forward-repair scope is
+`build.zig`, `src/Compiler.zig`, `src/compiler.{h,cpp}`, and
+`tests/external_consumer/`; the native support artifact owns the wrapper and
+publishes `luaz_compiler.h`. F3a/F3b compiler allocation accounting remains
+conditional on a Reified charge-domain decision; the consumer retains its meter.
 Write only docs/native-consumer.md and, when present,
 docs/compiler-allocation-feasibility.md for the final tested facts, patch list,
 and handoff. Repair code only within the responsible earlier scope.
@@ -328,7 +332,7 @@ F1 provides the package build steps used here. At the fork delivery boundary,
 the selected pinned toolchain ran these normal non-incremental checks:
 
 ~~~sh
-zig fmt --check build.zig build.zig.zon src tests/native_consumer
+zig fmt --check build.zig build.zig.zon src tests
 zig build -Doptimize=Debug -Dcodegen=false
 zig build test -Doptimize=Debug -Dcodegen=false
 zig build test-native-consumer -Doptimize=Debug -Dcodegen=false
@@ -346,9 +350,21 @@ changed. The final implementation revision and fingerprint are recorded in
 `docs/native-consumer.md` and `tests/native_consumer/baseline.json`.
 
 For this accepted G0 delivery, the implementation revision is
-`cb7a31e28d0a7d33c3c4a37a92c31103d44cb95d`, and the selected
+`21107bf1d6a0312fba75e696c799bcc03893cb87`, and the selected
 ReleaseSafe/codegen-disabled/vector-size-4 profile fingerprint is
-`522adcf844fbcfa96f7a02226093824b080273ab91295fc7bbe3966681712d9f`.
+`8e08ee8a06e21bdb63415906a47973d2dfb153e7668dc514349c8f1c656eff7d`.
+
+The separate package at `tests/external_consumer` also passed `zig build test`
+for Debug/ReleaseSafe with codegen disabled/enabled at vector size 4, plus
+ReleaseSafe/codegen-disabled/vector-size-3. It consumes the emitted public
+artifact include trees, including `luaz_config.h` and `luaz_compiler.h`, and
+checks native execution and explicit compiler exhaustion through both public
+Zig modules. The exact 8192-space-plus-function source with a consumer-owned
+4096-byte allocation budget returns exhaustion, with no live C++ allocations.
+An allocation-budget sweep covers cleanup after successful allocations and
+recovery; ordinary tests cover inclusive bytecode and diagnostic output-copy
+bounds. Repeated profile output is identical, and changing vector size or using
+`-Dcpu=generic` changes its fingerprint. This does not claim F3 route completeness.
 
 If F3a/F3b was required, also run the explicit isolated
 zig build test-compiler-allocation step. Run the exact focused primitive checks
@@ -363,8 +379,8 @@ accepted profile change. No automatic CI triggers are added.
 
 The fork candidate checkpoint is complete: the dependency can be acquired,
 built, linked, and fingerprinted coherently; the public `c`/`luaz` module
-closure reaches one support implementation; and no necessary used-primitive
-correction or allocation extension was identified in this candidate. If the
+closure reaches one support implementation; the demonstrated compiler exception
+and output-copy repair is delivered without a production allocator extension. If the
 Reified profile owner later requires a new compiler hook, reopen F3a/F3b with a
 reproducer and a charge-domain definition rather than treating this checkpoint
 as evidence for one.

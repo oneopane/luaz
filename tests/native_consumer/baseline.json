@@ -37,7 +37,7 @@
     "cxx_library": "libc++"
   },
   "candidate_delivery": {
-    "implementation_revision": "cb7a31e28d0a7d33c3c4a37a92c31103d44cb95d",
+    "implementation_revision": "21107bf1d6a0312fba75e696c799bcc03893cb87",
     "toolchain": {
       "path": "/opt/homebrew/bin/zig",
       "version": "0.16.0"
@@ -51,11 +51,11 @@
         "codegen": false,
         "vector_size": 4
       },
-      "fingerprint": "522adcf844fbcfa96f7a02226093824b080273ab91295fc7bbe3966681712d9f"
+      "fingerprint": "8e08ee8a06e21bdb63415906a47973d2dfb153e7668dc514349c8f1c656eff7d"
     },
     "checks": [
       {
-        "command": "/opt/homebrew/bin/zig fmt --check build.zig build.zig.zon src tests/native_consumer",
+        "command": "/opt/homebrew/bin/zig fmt --check build.zig build.zig.zon src tests",
         "result": "passed"
       },
       {
@@ -117,6 +117,35 @@
       {
         "command": "/opt/homebrew/bin/zig build profile -Doptimize=ReleaseSafe -Dcodegen=false -Dvector-size=3",
         "result": "passed; fingerprint differed"
+      },
+      {
+        "command": "/opt/homebrew/bin/zig build profile -Doptimize=ReleaseSafe -Dcodegen=false -Dvector-size=4 -Dcpu=generic",
+        "result": "passed; fingerprint differed"
+      },
+      {
+        "cwd": "tests/external_consumer",
+        "command": "/opt/homebrew/bin/zig build test -Doptimize=Debug -Dcodegen=false -Dvector-size=4 --summary failures",
+        "result": "passed"
+      },
+      {
+        "cwd": "tests/external_consumer",
+        "command": "/opt/homebrew/bin/zig build test -Doptimize=Debug -Dcodegen=true -Dvector-size=4 --summary failures",
+        "result": "passed"
+      },
+      {
+        "cwd": "tests/external_consumer",
+        "command": "/opt/homebrew/bin/zig build test -Doptimize=ReleaseSafe -Dcodegen=false -Dvector-size=4 --summary failures",
+        "result": "passed; artifact config header, explicit 4096-byte compiler exhaustion, allocation cleanup and recovery"
+      },
+      {
+        "cwd": "tests/external_consumer",
+        "command": "/opt/homebrew/bin/zig build test -Doptimize=ReleaseSafe -Dcodegen=true -Dvector-size=4 --summary failures",
+        "result": "passed"
+      },
+      {
+        "cwd": "tests/external_consumer",
+        "command": "/opt/homebrew/bin/zig build test -Doptimize=ReleaseSafe -Dcodegen=false -Dvector-size=3 --summary failures",
+        "result": "passed"
       }
     ]
   },
@@ -142,7 +171,8 @@
     ],
     "headers": [
       "include/luaz_config.h",
-      "include/handler.h"
+      "include/handler.h",
+      "include/luaz_compiler.h"
     ],
     "facts": [
       "share/luaz/build-facts.json",
@@ -154,6 +184,9 @@
     "identity_mapping_independently_resolved": false,
     "effective_build_facts_verified": true,
     "legacy_accounting_compatibility": false,
-    "compiler_allocation_charge_domain_attested": false
+    "compiler_allocation_charge_domain_attested": false,
+    "artifact_owned_config_include_tree_verified": true,
+    "native_compiler_exception_boundary_verified": true,
+    "compiler_output_copy_ceiling_verified": true
   }
 }

@@ -13,8 +13,9 @@ const luaz = @import("luaz");
 
 The package publishes the `luaz` and `luaz_support` artifacts alongside the
 `luau_vm` and `luau_compiler` dependencies. `luaz_support` is the sole owner
-of the Luaz native support source (`src/handler.cpp`) and installs
-`include/handler.h`; it is reached transitively by both public modules and by
+of the Luaz native support sources (`src/handler.cpp` and `src/compiler.cpp`)
+and installs `include/handler.h` and `include/luaz_compiler.h`; it is reached
+transitively by both public modules and by
 the `luaz` artifact. A consumer must link one package graph and must not
 compile `handler.cpp`, a second Luau VM, or a second Luau compiler. The
 `luau_codegen` artifact is present only when `-Dcodegen=true` (the compatibility
@@ -109,7 +110,7 @@ zig build profile -Doptimize=ReleaseSafe -Dcodegen=false -Dvector-size=4
 ```
 
 This delivery is bound to Luaz implementation revision
-`cb7a31e28d0a7d33c3c4a37a92c31103d44cb95d`. The selected profile is exactly
+`21107bf1d6a0312fba75e696c799bcc03893cb87`. The selected profile is exactly
 `/opt/homebrew/bin/zig build profile -Doptimize=ReleaseSafe -Dcodegen=false -Dvector-size=4`;
 its effective options are `optimize=ReleaseSafe`, `codegen=false`, and
 `vector_size=4`, with `LUA_USE_LONGJMP=1`, C++17, and libc++.
@@ -128,7 +129,7 @@ candidate and are not claimed by these checks.
 
 For the host `aarch64-macos` / ReleaseSafe / vector-size-4 / codegen-disabled
 configuration, the checked fingerprint is
-`522adcf844fbcfa96f7a02226093824b080273ab91295fc7bbe3966681712d9f`.
+`8e08ee8a06e21bdb63415906a47973d2dfb153e7668dc514349c8f1c656eff7d`.
 
 At that revision, focused callback trampoline coverage passed in the ordinary
 test artifact, including instance dispatch, state/block/string forwarding,
@@ -136,6 +137,36 @@ return propagation, and clearing callbacks on replacement. Debug and
 ReleaseSafe product, ordinary-test, and native-consumer checks passed with
 codegen disabled and enabled. Repeating the selected profile produced the same
 fingerprint; changing vector size produced a different fingerprint.
+
+The replacement implementation was checked with `/opt/homebrew/bin/zig`
+0.16.0 using the following exact command families (each brace alternative was
+run independently):
+
+```sh
+/opt/homebrew/bin/zig fmt --check build.zig build.zig.zon src tests
+/opt/homebrew/bin/zig build -Doptimize={Debug,ReleaseSafe} -Dcodegen={false,true} -Dvector-size=4 --summary failures
+/opt/homebrew/bin/zig build test test-native-consumer -Doptimize={Debug,ReleaseSafe} -Dcodegen={false,true} -Dvector-size=4 --summary failures
+# From tests/external_consumer:
+/opt/homebrew/bin/zig build test -Doptimize={Debug,ReleaseSafe} -Dcodegen={false,true} -Dvector-size=4 --summary failures
+/opt/homebrew/bin/zig build test -Doptimize=ReleaseSafe -Dcodegen=false -Dvector-size=3 --summary failures
+# From the package root:
+/opt/homebrew/bin/zig build profile -Doptimize=ReleaseSafe -Dcodegen=false -Dvector-size=4
+/opt/homebrew/bin/zig build profile -Doptimize=ReleaseSafe -Dcodegen=false -Dvector-size=3
+/opt/homebrew/bin/zig build profile -Doptimize=ReleaseSafe -Dcodegen=false -Dvector-size=4 -Dcpu=generic
+```
+
+All product, ordinary (93), native (3), and external consumer checks passed.
+The external config-header oracle first failed against receipt
+`c5086fd4651998f4b31d2ef31f7dff1ab34a7d15` with `luaz_config.h file not found`,
+then passed after the artifact-owned header repair. The compiler exhaustion
+oracle and inclusive-output-bound tests pass on the replacement. The selected
+fingerprint repeated identically; vector size 3 produced
+`1544b0e5d43b938915f063f8b70da935f185e7b68497d8322688ccd83e90ac92`, and
+`-Dcpu=generic` produced
+`71807351d0f151467d6ef1f790985e017d5a39817c75cb07c027916d9c6cf27b`.
+The selected profile output was restored after variant checks. These facts hash
+the production source/build inputs, including the new native compiler wrapper;
+the external fixture itself is bound by the immutable implementation revision.
 
 The package does not make arbitrary Luau calls safe across Zig cleanup or C++
 RAII frames when Luau uses `longjmp`. A consumer-owned protected native landing
