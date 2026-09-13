@@ -5,11 +5,13 @@ pub fn build(b: *std.Build) void {
     const optimize = b.standardOptimizeOption(.{});
     const codegen = b.option(bool, "codegen", "Enable CodeGen") orelse false;
     const vector_size = b.option(u8, "vector-size", "Vector size") orelse 4;
+    const copy_injection = b.option(bool, "test-copy-injection", "Exercise returned-copy allocation failures") orelse false;
     const dependency = b.dependency("luaz", .{
         .target = target,
         .optimize = optimize,
         .codegen = codegen,
         .@"vector-size" = vector_size,
+        .@"test-copy-injection" = copy_injection,
     });
     const mod = b.createModule(.{
         .root_source_file = b.path("root.zig"),
@@ -19,6 +21,9 @@ pub fn build(b: *std.Build) void {
     });
     mod.addImport("luaz", dependency.module("luaz"));
     mod.addImport("c", dependency.module("c"));
+    const test_options = b.addOptions();
+    test_options.addOption(bool, "copy_injection", copy_injection);
+    mod.addOptions("test_options", test_options);
     mod.addIncludePath(dependency.artifact("luaz").getEmittedIncludeTree());
     mod.addIncludePath(dependency.artifact("luau_vm").getEmittedIncludeTree());
     mod.addIncludePath(dependency.artifact("luaz_support").getEmittedIncludeTree());

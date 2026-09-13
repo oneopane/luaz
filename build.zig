@@ -29,6 +29,7 @@ pub fn build(b: *std.Build) !void {
         .cover = b.option(bool, "coverage", "Generate test coverage (requires kcov)") orelse false,
         .codegen = b.option(bool, "codegen", "Build and link Luau CodeGen") orelse true,
         .vector_size = b.option(u8, "vector-size", "Luau vector size (3 or 4, default 4)") orelse 4,
+        .test_copy_injection = b.option(bool, "test-copy-injection", "Test-only external returned-copy allocator binding") orelse false,
     };
 
     // Validate vector size
@@ -167,6 +168,7 @@ pub fn build(b: *std.Build) !void {
 
         mod.addCSourceFile(.{ .file = b.path("src/handler.cpp"), .flags = flags });
         mod.addCSourceFile(.{ .file = b.path("src/compiler.cpp"), .flags = flags });
+        if (opts.test_copy_injection) mod.addCMacro("LUAZ_TEST_RETURNED_COPY_ALLOCATOR", "1");
         mod.addCMacro("LUA_VECTOR_SIZE", b.fmt("{d}", .{opts.vector_size}));
         mod.addIncludePath(luau_dep.path("Common/include"));
         mod.addIncludePath(luau_dep.path("VM/include"));
@@ -416,7 +418,7 @@ pub fn build(b: *std.Build) !void {
 
     // Deterministic facts for consumers that attest the selected native build.
     {
-        const facts = try buildFacts(b, target, optimize, opts.codegen, opts.vector_size);
+        const facts = try buildFacts(b, target, optimize, opts.codegen, opts.vector_size, opts.test_copy_injection);
         var digest: [32]u8 = undefined;
         std.crypto.hash.sha2.Sha256.hash(facts, &digest, .{});
         const fingerprint = std.fmt.bytesToHex(digest, .lower);
@@ -532,6 +534,7 @@ fn buildFacts(
     optimize: std.builtin.OptimizeMode,
     codegen: bool,
     vector_size: u8,
+    test_copy_injection: bool,
 ) ![]const u8 {
     const gpa = b.allocator;
     const triple = try target.result.zigTriple(gpa);
@@ -584,6 +587,8 @@ fn buildFacts(
     try appendJsonIntField(&facts, gpa, "vector_size", vector_size, true);
     try appendJsonBoolField(&facts, gpa, "longjmp", true, true);
     try appendJsonBoolField(&facts, gpa, "codegen", codegen, true);
+    try appendJsonBoolField(&facts, gpa, "test_returned_copy_allocator", test_copy_injection, true);
+    try appendJsonStringArrayField(&facts, gpa, "test_support_c_macros", if (test_copy_injection) &.{"LUAZ_TEST_RETURNED_COPY_ALLOCATOR=1"} else &.{}, true);
     try appendJsonStringField(&facts, gpa, "cxx_standard", "c++17", true);
     try appendJsonStringField(&facts, gpa, "cxx_library", "libc++", true);
     try appendJsonStringArrayField(&facts, gpa, "cxx_flags", cxx_flags, true);

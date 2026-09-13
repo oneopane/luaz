@@ -9,6 +9,8 @@
 #include <cstring>
 #include <limits>
 #include <new>
+#include <atomic>
+#include <thread>
 
 // Consumer-owned deterministic allocator: production Luaz does not install it.
 static thread_local bool metering;
@@ -17,6 +19,21 @@ static thread_local size_t budget;
 static thread_local size_t successful_allocations;
 static thread_local bool meter_refused;
 static thread_local bool fail_backing_allocation;
+static thread_local int copy_mode;
+static thread_local size_t copy_attempts;
+static thread_local size_t copy_live_bytes;
+// C++ linkage deliberately permits the sentinel to reach Luaz's catch-all.
+void* luaz_test_returned_copy_allocate(size_t size)
+{
+    ++copy_attempts;
+    copy_live_bytes = live_bytes;
+    if (copy_mode == 1) return nullptr;
+    if (copy_mode == 2) throw 42;
+    return std::malloc(size);
+}
+extern "C" void compiler_copy_mode(int mode) { copy_mode = mode; }
+extern "C" size_t compiler_copy_attempts() { return copy_attempts; }
+extern "C" size_t compiler_copy_live_bytes() { return copy_live_bytes; }
 struct alignas(std::max_align_t) Allocation {
     size_t size;
     bool charged;
@@ -68,6 +85,9 @@ extern "C" void compiler_budget_begin(size_t limit)
     successful_allocations = 0;
     meter_refused = false;
     fail_backing_allocation = false;
+    copy_mode = 0;
+    copy_attempts = 0;
+    copy_live_bytes = 0;
     metering = true;
 }
 extern "C" void compiler_backing_fail() { fail_backing_allocation = true; }
@@ -76,6 +96,31 @@ extern "C" size_t compiler_budget_end()
 {
     metering = false;
     return live_bytes;
+}
+
+extern "C" bool compiler_concurrent_copy_isolation()
+{
+    std::atomic<unsigned> ready{0};
+    bool passed[2] = {false, false};
+    auto invoke = [&](int mode) {
+        compiler_budget_begin(std::numeric_limits<size_t>::max());
+        compiler_copy_mode(mode);
+        ready.fetch_add(1);
+        while (ready.load() != 2) std::this_thread::yield();
+        char* output = reinterpret_cast<char*>(1);
+        size_t size = 1;
+        const auto status = luaz_compile_bounded("return 42", 9, nullptr, 4096, &output, &size);
+        const auto expected = mode == 1 ? LUAZ_COMPILE_ALLOCATION_FAILED : LUAZ_COMPILE_INTERNAL_ERROR;
+        const auto live = compiler_budget_end();
+        passed[mode - 1] = status == expected && !output && size == 0 && !meter_refused &&
+            live == 0 && copy_attempts == 1 && copy_live_bytes > 0;
+        std::free(output);
+    };
+    std::thread first(invoke, 1);
+    std::thread second(invoke, 2);
+    first.join();
+    second.join();
+    return passed[0] && passed[1];
 }
 
 static_assert(LUA_USE_LONGJMP == 1);

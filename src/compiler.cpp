@@ -5,6 +5,11 @@
 #include <new>
 #include <string>
 
+#ifdef LUAZ_TEST_RETURNED_COPY_ALLOCATOR
+// External fixture supplies this C++-linkage binding only in injected builds.
+void* luaz_test_returned_copy_allocate(size_t size);
+#endif
+
 Luaz_CompileStatus luaz_compile_bounded(const char* source, size_t source_size,
     const lua_CompileOptions* options, size_t output_limit,
     char** output, size_t* output_size) noexcept
@@ -24,7 +29,11 @@ Luaz_CompileStatus luaz_compile_bounded(const char* source, size_t source_size,
             return LUAZ_COMPILE_OUTPUT_LIMIT_EXCEEDED;
         if (result.empty())
             return LUAZ_COMPILE_INTERNAL_ERROR;
+#ifdef LUAZ_TEST_RETURNED_COPY_ALLOCATOR
+        char* copy = static_cast<char*>(luaz_test_returned_copy_allocate(result.size()));
+#else
         char* copy = static_cast<char*>(std::malloc(result.size()));
+#endif
         if (!copy)
             return LUAZ_COMPILE_ALLOCATION_FAILED;
         std::memcpy(copy, result.data(), result.size());
